@@ -13,6 +13,12 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             _dataFileManager = dataFileManager;
             _dataFileManager.PropertyChanged += OnDataFileManagerPropertyChanged;
+
+            // As a lazily-constructed singleton, this can be built after a data file
+            // was already loaded (e.g. the switch to the Editor screen itself triggers
+            // this construction) - sync with the current state instead of only
+            // waiting for the next change notification, which would otherwise be missed.
+            RebuildTree();
         }
         #endregion
 
