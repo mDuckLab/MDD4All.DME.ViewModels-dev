@@ -105,6 +105,7 @@ namespace MDD4All.DME.ViewModels.Editor
 
                     OnPropertyChanged(nameof(Item));
 
+                    // Only notify IsNull when its own value actually flips, not on every Item change.
                     if (wasNullBefore != isNullNow)
                     {
                         OnPropertyChanged(nameof(IsNull));
