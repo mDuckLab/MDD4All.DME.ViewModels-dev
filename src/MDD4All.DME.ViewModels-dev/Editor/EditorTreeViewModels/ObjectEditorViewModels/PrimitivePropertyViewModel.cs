@@ -35,43 +35,11 @@ namespace MDD4All.DME.ViewModels.Editor
                     base.Item = value;
                     this.OnPropertyChanged(nameof(Item));
 
-                    this.UpdateValueInParent(value);
+                    this.UpdateParentReference();
                 }
                 else
                 {
                     this.OnPropertyChanged(nameof(Item));
-                }
-            }
-        }
-
-        private void UpdateValueInParent(object? newValue)
-        {
-            if (this.Parent != null)
-            {
-                if (this.Parent is DictionaryEntryViewModel entryParent)
-                {
-                    entryParent.ChangeChild(this.Access, newValue);
-                }
-                else if (this.Parent is ObjectEditorViewModel parent && parent.Item != null)
-                {
-                    if (this.Access is ListAccess listAccess && parent is ListEditorViewModel listParent)
-                    {
-                        listParent.ItemAsList![listAccess.Index] = newValue;
-                    }
-                    else if (this.Access is ArrayAccess arrayAccess && parent is ArrayEditorViewModel arrayParent)
-                    {
-                        arrayParent.ItemAsArray!.SetValue(newValue, arrayAccess.Index);
-                    }
-                    else if (this.Access is PropertyAccess propertyAccess)
-                    {
-                        propertyAccess.PropertyInfo.SetValue(parent.Item, newValue);
-                    }
-                }
-
-                // Global flag for the tree
-                if (this.Tree is ObjectTreeViewModel objectTree)
-                {
-                    objectTree.HasBeenProcessed = true;
                 }
             }
         }

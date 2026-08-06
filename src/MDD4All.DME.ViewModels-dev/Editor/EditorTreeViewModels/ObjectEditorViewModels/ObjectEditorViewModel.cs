@@ -3,6 +3,7 @@ using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
 using System;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
@@ -225,9 +226,7 @@ namespace MDD4All.DME.ViewModels.Editor
         public EditorState EditorState { get; private set; }
 
         // Short, technical type label ("List"/"Array"/"Dictionary"/"Object") for
-        // readers who want to know the underlying .NET shape at a glance - as
-        // opposed to ReferenceEditorViewModel.BadgeText's friendlier, more
-        // descriptive phrasing ("list of whole numbers").
+        // readers who want to know the underlying .NET shape at a glance.
         public string? TypeBadgeText
         {
             get
@@ -512,6 +511,45 @@ namespace MDD4All.DME.ViewModels.Editor
         public string DragDropOperationInformation { get; set; } = string.Empty;
 
         #endregion
+
+        #endregion
+
+        #region methods
+
+        // Writes this.Item back into wherever Access says it lives in the parent - a
+        // property, an indexed slot in a List/Array, or a dictionary entry. Shared by
+        // PrimitivePropertyViewModel (a value replacing itself) and the Reference/
+        // Collection editors (a newly created instance replacing a null slot).
+        // TODO fire both HasBeenProcessed and StateChanged for now - revisit whether
+        // these two change-notification paths can be unified too.
+        protected void UpdateParentReference()
+        {
+            if (this.Parent is ObjectEditorViewModel parentVM)
+            {
+                if (parentVM is DictionaryEntryViewModel entryParent)
+                {
+                    entryParent.ChangeChild(this.Access, this.Item);
+                }
+                else if (parentVM.Item != null)
+                {
+                    if (this.Access is PropertyAccess propertyAccess)
+                    {
+                        propertyAccess.PropertyInfo.SetValue(parentVM.Item, this.Item);
+                    }
+                    else if (this.Access is IndexedAccess indexedAccess && parentVM.Item is IList list)
+                    {
+                        list[indexedAccess.Index] = this.Item;
+                    }
+                }
+
+                parentVM.StateChanged = true;
+
+                if (this.Tree is ObjectTreeViewModel objectTree)
+                {
+                    objectTree.HasBeenProcessed = true;
+                }
+            }
+        }
 
         #endregion
     }

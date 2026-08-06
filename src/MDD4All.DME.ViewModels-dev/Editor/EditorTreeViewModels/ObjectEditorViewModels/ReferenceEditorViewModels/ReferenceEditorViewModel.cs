@@ -121,14 +121,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 return result;
             }
         }
-
-        public virtual string BadgeText
-        {
-            get
-            {
-                return "Reference";
-            }
-        }
         #endregion
 
         #region Comand Execute
@@ -189,33 +181,5 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
         #endregion
-
-        //refactoring nochmal anschauen
-        protected void UpdateParentReference()
-        {
-            if (this.Parent != null && this.Parent is ObjectEditorViewModel parentVM && parentVM.Item != null)
-            {
-                if (this.Access is PropertyAccess propertyAccess)
-                {
-                    propertyAccess.PropertyInfo.SetValue(parentVM.Item, this.Item);
-                }
-                else if (this.Access is ListAccess listAccess && parentVM is ListEditorViewModel listParent)
-                {
-                    if (listParent.ItemAsList != null)
-                    {
-                        listParent.ItemAsList[listAccess.Index] = this.Item;
-                    }
-                }
-                else if (this.Access is ArrayAccess arrayAccess && parentVM is ArrayEditorViewModel arrayParent)
-                {
-                    if (arrayParent.ItemAsArray != null)
-                    {
-                        arrayParent.ItemAsArray.SetValue(this.Item, arrayAccess.Index);
-                    }
-                }
-
-                parentVM.StateChanged = true;
-            }
-        }
     }
 }
