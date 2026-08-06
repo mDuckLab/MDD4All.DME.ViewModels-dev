@@ -41,14 +41,9 @@ namespace MDD4All.DME.ViewModels.Editor
                 // Nothing to add an element to until the collection/dictionary itself exists.
                 if (_viewModel.Item != null)
                 {
-                    if (_viewModel.TypeCategory == TypeCategory.IList || _viewModel.TypeCategory == TypeCategory.Array)
-                    {
-                        if (_viewModel is IndexedCollectionEditorViewModel)
-                        {
-                            result = true;
-                        }
-                    }
-                    else if (_viewModel.TypeCategory == TypeCategory.IDictionary)
+                    if (_viewModel.TypeCategory == TypeCategory.IList ||
+                        _viewModel.TypeCategory == TypeCategory.Array ||
+                        _viewModel.TypeCategory == TypeCategory.IDictionary)
                     {
                         result = true;
                     }
@@ -63,19 +58,14 @@ namespace MDD4All.DME.ViewModels.Editor
             get
             {
                 bool result = false;
-
                 // Nothing to toggle delete mode for until there's an object with children.
                 if (_viewModel.Item != null && _viewModel.HasChildNodes)
                 {
-                    if (_viewModel.TypeCategory == TypeCategory.IList || _viewModel.TypeCategory == TypeCategory.Array)
+                    if (_viewModel is IndexedCollectionEditorViewModel indexedCollectionEditorViewModel)
                     {
-                        if (_viewModel is IndexedCollectionEditorViewModel)
+                        if (indexedCollectionEditorViewModel.IsUnderlyingTypeSimple)
                         {
-                            IndexedCollectionEditorViewModel indexedCollectionEditorViewModel = (IndexedCollectionEditorViewModel)_viewModel;
-                            if (indexedCollectionEditorViewModel.IsUnderlyingTypeSimple)
-                            {
-                                result = true;
-                            }
+                            result = true;
                         }
                     }
                     else if (_viewModel.TypeCategory == TypeCategory.IDictionary)
@@ -83,10 +73,8 @@ namespace MDD4All.DME.ViewModels.Editor
                         result = true;
                     }
                 }
-
                 return result;
             }
-
         }
 
         public bool ShowDeleteButton
@@ -124,8 +112,6 @@ namespace MDD4All.DME.ViewModels.Editor
         public bool IsExpanded { get; set; } = false;
 
         public bool IsDeleteMode { get; set; } = false;
-
-
 
         public bool CanRenderChildren
         {
