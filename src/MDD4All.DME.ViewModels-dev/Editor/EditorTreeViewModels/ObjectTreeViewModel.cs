@@ -37,7 +37,10 @@ namespace MDD4All.DME.ViewModels.Editor
 
         public ITreeNode? SelectedNode
         {
-            get => _selectedNode;
+            get
+            {
+                return _selectedNode;
+            }
             set
             {
                 if (_selectedNode != value)
