@@ -21,6 +21,7 @@ namespace MDD4All.DME.ViewModels.Editor
         #endregion
 
         #region properties
+        // Unlike a reference type, a new primitive value has to be written back into the parent explicitly.
         public override object? Item
         {
             get

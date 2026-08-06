@@ -86,6 +86,7 @@ namespace MDD4All.DME.ViewModels.Editor
 
         private object? _item;
 
+        // Virtual so PrimitivePropertyViewModel can also write the new value back into its parent.
         public virtual object? Item
         {
             get
