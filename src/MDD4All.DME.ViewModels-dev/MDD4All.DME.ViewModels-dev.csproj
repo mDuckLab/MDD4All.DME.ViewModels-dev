@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\MDD4All.Reflection.TypeAnalyzer\src\MDD4All.Reflection.TypeAnalyzer\MDD4All.Reflection.TypeAnalyzer.csproj" />
-    <ProjectReference Include="..\..\..\MDD4All.ObjectGraph.Access\src\MDD4All.ObjectGraph.Access\MDD4All.ObjectGraph.Access.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.UI.DataModels\src\MDD4All.UI.DataModels\MDD4All.UI.DataModels-dev.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.Configuration\src\MDD4All.Configuration\MDD4All.Configuration-dev.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.FileAccess.Contracts\src\MDD4All.FileAccess.Contracts\MDD4All.FileAccess.Contracts-dev.csproj" />
