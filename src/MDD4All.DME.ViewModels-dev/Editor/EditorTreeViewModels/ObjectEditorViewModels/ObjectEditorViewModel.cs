@@ -77,12 +77,9 @@ namespace MDD4All.DME.ViewModels.Editor
 
         #region properties
 
-        public EditorState EditorState { get; private set; }
+        #region Logic / Data properties
 
-
-
-
-
+        public Access Access { get; set; } = null!;
 
         private object? _item;
 
@@ -148,8 +145,6 @@ namespace MDD4All.DME.ViewModels.Editor
 
         public TypeAnalyzer TypeAnalyzer { get; set; } = null!;
 
-        public Access Access { get; set; } = null!;
-
         public bool IsReadOnly
         {
             get
@@ -157,6 +152,77 @@ namespace MDD4All.DME.ViewModels.Editor
                 return !Access.CanWrite;
             }
         }
+
+        public bool IsNull
+        {
+            get
+            {
+                bool result = false;
+                if (this.Item == null)
+                {
+                    result = true;
+                }
+                return result;
+            }
+        }
+
+        public ITreeNode? Parent { get; set; }
+
+        public ObservableCollection<ITreeNode> Children { get; set; } = null!;
+
+        public ITree? Tree { get; set; }
+
+        public int Index
+        {
+            get
+            {
+                int result = 0;
+
+                if (Parent != null)
+                {
+                    int counter = 0;
+                    foreach (ITreeNode child in Parent.Children)
+                    {
+                        if (child == this)
+                        {
+                            result = counter;
+                            break;
+                        }
+                        counter++;
+                    }
+
+                }
+
+                return result;
+            }
+        }
+
+        public bool HasChildNodes
+        {
+            get
+            {
+                return Children.Count > 0;
+            }
+        }
+
+        public bool StateChanged
+        {
+            set
+            {
+                if (value == true)
+                {
+                    OnPropertyChanged(nameof(StateChanged));
+                }
+            }
+        }
+
+        public event EventHandler? TreeStateChanged;
+
+        #endregion
+
+        #region UI / Display properties
+
+        public EditorState EditorState { get; private set; }
 
         // Short, technical type label ("List"/"Array"/"Dictionary"/"Object") for
         // readers who want to know the underlying .NET shape at a glance - as
@@ -346,6 +412,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // Reads a [DataType] attribute hint (e.g. "MultilineText") so the editor can pick a fitting input control.
         public string? DataTypeAnnotation
         {
             get
@@ -393,69 +460,6 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        public bool IsNull
-        {
-            get
-            {
-                bool result = false;
-                if (this.Item == null)
-                {
-                    result = true;
-                }
-                return result;
-            }
-        }
-
-        public ITreeNode? Parent { get; set; }
-
-        public ObservableCollection<ITreeNode> Children { get; set; } = null!;
-
-        public bool StateChanged
-        {
-            set
-            {
-                if (value == true)
-                {
-                    OnPropertyChanged(nameof(StateChanged));
-                }
-            }
-        }
-
-        public ITree? Tree { get; set; }
-
-        public int Index
-        {
-            get
-            {
-                int result = 0;
-
-                if (Parent != null)
-                {
-                    int counter = 0;
-                    foreach (ITreeNode child in Parent.Children)
-                    {
-                        if (child == this)
-                        {
-                            result = counter;
-                            break;
-                        }
-                        counter++;
-                    }
-
-                }
-
-                return result;
-            }
-        }
-
-        public bool HasChildNodes
-        {
-            get
-            {
-                return Children.Count > 0;
-            }
-        }
-
         public bool IsExpanded { get; set; }
 
         public bool IsSelected
@@ -471,6 +475,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
             set
             {
+                // No-op: ITreeNode requires a setter, but selection is actually driven by setting Tree.SelectedNode.
             }
         }
 
@@ -504,9 +509,10 @@ namespace MDD4All.DME.ViewModels.Editor
 
         public bool IsDisabled { get; set; } = false;
 
-        public event EventHandler? TreeStateChanged;
-
         public string DragDropOperationInformation { get; set; } = string.Empty;
+
+        #endregion
+
         #endregion
     }
 }
