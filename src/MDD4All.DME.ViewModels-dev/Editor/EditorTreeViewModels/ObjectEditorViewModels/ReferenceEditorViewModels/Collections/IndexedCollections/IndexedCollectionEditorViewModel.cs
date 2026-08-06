@@ -39,8 +39,6 @@ namespace MDD4All.DME.ViewModels.Editor
         protected abstract void ExecuteCreateInstance();
 
         protected abstract void ExecuteDeleteAtIndex(int index);
-
-        protected abstract string CollectionTypePrefix { get; } // "list of" or "array of"
         #endregion
 
         #region Comand Definitions
@@ -99,54 +97,6 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        public override string BadgeText
-        {
-            get
-            {
-                string prefix = CollectionTypePrefix;
-                string typeDisplayName = "objects";
-
-                if (UnderlyingType != null)
-                {
-                    if (UnderlyingType == typeof(string))
-                    {
-                        typeDisplayName = "text";
-                    }
-                    else if (UnderlyingType == typeof(int) || UnderlyingType == typeof(long) ||
-                             UnderlyingType == typeof(short) || UnderlyingType == typeof(byte))
-                    {
-                        typeDisplayName = "whole numbers";
-                    }
-                    else if (UnderlyingType == typeof(double) || UnderlyingType == typeof(float) ||
-                             UnderlyingType == typeof(decimal))
-                    {
-                        typeDisplayName = "decimal numbers";
-                    }
-                    else if (UnderlyingType == typeof(bool))
-                    {
-                        typeDisplayName = "yes/no values";
-                    }
-                    else if (UnderlyingType == typeof(DateTime))
-                    {
-                        typeDisplayName = "dates and times";
-                    }
-                    else if (UnderlyingType == typeof(char))
-                    {
-                        typeDisplayName = "single characters";
-                    }
-                    else if (UnderlyingType == typeof(Guid))
-                    {
-                        typeDisplayName = "unique ids";
-                    }
-                    else
-                    {
-                        typeDisplayName = UnderlyingType.Name.ToLower();
-                    }
-                }
-
-                return $"{prefix} {typeDisplayName}";
-            }
-        }
         #endregion
 
         #region Collection Synchronization

@@ -87,14 +87,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 Item = value;
             }
         }
-
-        override protected string CollectionTypePrefix
-        {
-            get
-            {
-                return "array of";
-            }
-        }   
         #endregion
 
         #region Comand Execute

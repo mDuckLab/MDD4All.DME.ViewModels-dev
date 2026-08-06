@@ -15,8 +15,6 @@ namespace MDD4All.DME.ViewModels.Editor
 
         public int CurrentDepth { get; set; } = 1;
 
-        public string? BadgeText { get; set; }
-
         public bool ShowCreateButton
         {
             get

@@ -82,13 +82,6 @@ namespace MDD4All.DME.ViewModels.Editor
         #endregion
 
         #region Properties
-        public override string BadgeText
-        {
-            get
-            {
-                return "dictionary";
-            }
-        }
         public IDictionary? ItemAsDictionary
         {
             get

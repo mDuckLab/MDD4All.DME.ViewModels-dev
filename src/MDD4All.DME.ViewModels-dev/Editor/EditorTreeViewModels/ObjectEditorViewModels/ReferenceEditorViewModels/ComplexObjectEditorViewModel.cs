@@ -83,16 +83,6 @@ namespace MDD4All.DME.ViewModels.Editor
         }
         #endregion
 
-        #region properties
-        public override string BadgeText
-        {
-            get
-            {
-                return "ComplexObject";
-            }
-        }
-        #endregion
-
         #region UI Prioritization
         public ICommand CreateInstanceCommand { get; private set; } = null!;
         #endregion
