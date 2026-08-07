@@ -1,4 +1,4 @@
-﻿using MDD4All.Reflection;
+using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
 using System;
@@ -11,27 +11,19 @@ namespace MDD4All.DME.ViewModels.Editor
         public ArrayEditorViewModel(ITree tree, Access access, object item, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, item, null, title, parent, preAnalyzedResult)
         {
-            this.InitializeArrayData();
             this.CreateTree();
         }
 
         public ArrayEditorViewModel(ITree tree, Access access, Type targetType, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, null, targetType, title, parent, preAnalyzedResult)
         {
-            this.InitializeArrayData();
             this.CreateTree();
         }
 
         public ArrayEditorViewModel(ITree tree, Access access, object? item, Type? targetType, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, item, targetType, title, parent, preAnalyzedResult)
         {
-            this.InitializeArrayData();
             this.CreateTree();
-        }
-
-        private void InitializeArrayData()
-        {
-            this.UnderlyingTypeAnalyzer = TypeAnalyzer.CreateAnalyst(base.TypeAnalyzer.UnderlyingTypes[0]);
         }
 
         public void CreateTree()
@@ -57,19 +49,9 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
-
-        private void CreateArrayInstance(int length = 0)
-        {
-            if (length >= 0)
-            {
-                this.Item = Array.CreateInstance(UnderlyingType, length);
-                this.Children.Clear();
-                UpdateParentReference();
-            }
-        }
         #endregion
 
-        #region properties
+        #region Logic / Data
         public Array? ItemAsArray
         {
             get
@@ -87,9 +69,19 @@ namespace MDD4All.DME.ViewModels.Editor
                 Item = value;
             }
         }
+
+        private void CreateArrayInstance(int length = 0)
+        {
+            if (length >= 0)
+            {
+                this.Item = Array.CreateInstance(UnderlyingType, length);
+                this.Children.Clear();
+                UpdateParentReference();
+            }
+        }
         #endregion
 
-        #region Comand Execute
+        #region Commands
         override protected void ExecuteCreateInstance()
         {
             this.CreateArrayInstance();
@@ -176,7 +168,7 @@ namespace MDD4All.DME.ViewModels.Editor
                     Array newArray = Array.CreateInstance(UnderlyingType, newLength);
                     // Array.Copy(source, source start, destination, destination start, number)
                     // index : 0 1 2 3 4
-                    // object: a b c d e 
+                    // object: a b c d e
                     // remove at index 1
                     // neberBefor Index = index
                     // new length = oldLength -1 -> 4

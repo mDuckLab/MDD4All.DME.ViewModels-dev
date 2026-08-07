@@ -1,9 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Reflection;
 using MDD4All.ObjectGraph.Access;
+using MDD4All.Reflection;
 using MDD4All.UI.DataModels.Tree;
 using System;
-using MDD4All.Reflection;
 
 namespace MDD4All.DME.ViewModels.Editor
 {
@@ -20,7 +18,7 @@ namespace MDD4All.DME.ViewModels.Editor
             : base(tree, access, item, targetType, title, parent, preAnalyzedResult) { }
         #endregion
 
-        #region properties
+        #region Logic / Data
         // Unlike a reference type, a new primitive value has to be written back into the parent explicitly.
         public override object? Item
         {
@@ -43,7 +41,9 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
+        #endregion
 
+        #region UI / Display
         protected override string DefaultTitle
         {
             get
@@ -63,7 +63,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 return result;
             }
         }
-
         #endregion
     }
 }

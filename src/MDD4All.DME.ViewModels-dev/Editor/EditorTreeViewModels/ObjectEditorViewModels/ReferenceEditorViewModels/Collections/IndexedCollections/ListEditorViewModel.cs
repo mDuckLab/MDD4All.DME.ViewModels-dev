@@ -1,4 +1,4 @@
-﻿using MDD4All.Reflection;
+using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
 using System;
@@ -13,27 +13,19 @@ namespace MDD4All.DME.ViewModels.Editor
         public ListEditorViewModel(ITree tree, Access access, object item, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, item, null, title, parent, preAnalyzedResult)
         {
-            this.InitializeListData();
             this.CreateTree();
         }
 
         public ListEditorViewModel(ITree tree, Access access, Type targetType, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, null, targetType, title, parent, preAnalyzedResult)
         {
-            this.InitializeListData();
             this.CreateTree();
         }
 
         public ListEditorViewModel(ITree tree, Access access, object? item, Type? targetType, string? title = null, ITreeNode? parent = null, TypeAnalyzer? preAnalyzedResult = null)
             : base(tree, access, item, targetType, title, parent, preAnalyzedResult)
         {
-            this.InitializeListData();
             this.CreateTree();
-        }
-
-        private void InitializeListData()
-        {
-            this.UnderlyingTypeAnalyzer = TypeAnalyzer.CreateAnalyst(base.TypeAnalyzer.UnderlyingTypes[0]);
         }
 
         public void CreateTree()
@@ -59,22 +51,9 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
-
-        private void CreateListInstance()
-        {
-            Type listType = typeof(List<>);
-            Type concreteListType = listType.MakeGenericType(this.UnderlyingType);
-
-            object? dynamicList = Activator.CreateInstance(concreteListType);
-
-
-            this.Item = dynamicList;
-            this.Children.Clear();
-            UpdateParentReference();
-        }
         #endregion
 
-        #region properties
+        #region Logic / Data
         public IList? ItemAsList
         {
             get
@@ -93,9 +72,21 @@ namespace MDD4All.DME.ViewModels.Editor
                 Item = value;
             }
         }
+
+        private void CreateListInstance()
+        {
+            Type listType = typeof(List<>);
+            Type concreteListType = listType.MakeGenericType(this.UnderlyingType);
+
+            object? dynamicList = Activator.CreateInstance(concreteListType);
+
+            this.Item = dynamicList;
+            this.Children.Clear();
+            UpdateParentReference();
+        }
         #endregion
 
-        #region Comand Execute
+        #region Commands
         override protected void ExecuteCreateInstance()
         {
             this.CreateListInstance();
@@ -171,4 +162,3 @@ namespace MDD4All.DME.ViewModels.Editor
         #endregion
     }
 }
-

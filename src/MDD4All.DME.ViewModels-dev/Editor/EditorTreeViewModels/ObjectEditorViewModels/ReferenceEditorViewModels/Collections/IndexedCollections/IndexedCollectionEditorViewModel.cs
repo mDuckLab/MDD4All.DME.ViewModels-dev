@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
@@ -27,29 +27,13 @@ namespace MDD4All.DME.ViewModels.Editor
         private void InitializeCommands()
         {
             // Die Commands rufen die abstrakten Methoden auf
-            this.AddElementCommand = new RelayCommand(ExecuteAddItem);
+            this.AddItemCommand = new RelayCommand(ExecuteAddItem);
             this.CreateInstanceCommand = new RelayCommand(ExecuteCreateInstance);
             this.DeleteAtIndexCommand = new RelayCommand<int>(ExecuteDeleteAtIndex);
         }
         #endregion
 
-        #region Abstract Logic
-        protected abstract void ExecuteAddItem();
-
-        protected abstract void ExecuteCreateInstance();
-
-        protected abstract void ExecuteDeleteAtIndex(int index);
-        #endregion
-
-        #region Comand Definitions
-        public ICommand AddElementCommand { get; protected set; } = null!;
-
-        public ICommand CreateInstanceCommand { get; protected set; } = null!;
-
-        public ICommand DeleteAtIndexCommand { get; protected set; } = null!;
-        #endregion
-
-        #region properties
+        #region Logic / Data
         public TypeAnalyzer UnderlyingTypeAnalyzer { get; protected set; } = null!;
 
         public Type UnderlyingType
@@ -97,9 +81,6 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        #endregion
-
-        #region Collection Synchronization
         protected void ReorderIndexChild(int startIndex = 0)
         {
             for (int newIndex = startIndex; newIndex < this.Children.Count; newIndex++)
@@ -115,6 +96,20 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
+        #endregion
+
+        #region Commands
+        public ICommand AddItemCommand { get; protected set; } = null!;
+
+        protected abstract void ExecuteAddItem();
+
+        public ICommand CreateInstanceCommand { get; protected set; } = null!;
+
+        protected abstract void ExecuteCreateInstance();
+
+        public ICommand DeleteAtIndexCommand { get; protected set; } = null!;
+
+        protected abstract void ExecuteDeleteAtIndex(int index);
         #endregion
     }
 }

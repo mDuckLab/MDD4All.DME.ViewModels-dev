@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
@@ -31,7 +31,7 @@ namespace MDD4All.DME.ViewModels.Editor
         private void InitializeCommands()
         {
             // RelayCommand comes from CommunityToolkit.Mvvm.Input -> RelayCommand(Action (Functionpointer) , bool (execute possible))
-            this.DeleteCommand = new RelayCommand(this.ExecuteDeleteItem);
+            this.DeleteItemCommand = new RelayCommand(this.ExecuteDeleteItem);
         }
         #endregion
 
@@ -93,37 +93,9 @@ namespace MDD4All.DME.ViewModels.Editor
         }
         #endregion
 
-        #region Comand Definitions
-        public ICommand DeleteCommand { get; private set; } = null!;
+        #region Commands
+        public ICommand DeleteItemCommand { get; private set; } = null!;
 
-
-        #endregion
-
-        #region properties
-        protected override string DefaultTitle
-        {
-            get
-            {
-                string result = "";
-
-                // Check if it's an indexed access (List or Array)
-                if (Access is IndexedAccess indexedAccess)
-                {
-                    string typeName = Type?.Name ?? "object";
-                    result = $"{indexedAccess.Index + 1}. {base.DefaultTitle}";
-                }
-                // Fallback to the base logic (e.g., for PropertyAccess)
-                else
-                {
-                    result = base.DefaultTitle;
-                }
-
-                return result;
-            }
-        }
-        #endregion
-
-        #region Comand Execute
         private void ExecuteDeleteItem()
         {
             if (this.Parent != null)
@@ -175,6 +147,29 @@ namespace MDD4All.DME.ViewModels.Editor
 
                     entryParent.StateChanged = true;
                 }
+            }
+        }
+        #endregion
+
+        #region UI / Display
+        protected override string DefaultTitle
+        {
+            get
+            {
+                string result = "";
+
+                // Check if it's an indexed access (List or Array)
+                if (Access is IndexedAccess indexedAccess)
+                {
+                    result = $"{indexedAccess.Index + 1}. {base.DefaultTitle}";
+                }
+                // Fallback to the base logic (e.g., for PropertyAccess)
+                else
+                {
+                    result = base.DefaultTitle;
+                }
+
+                return result;
             }
         }
         #endregion
