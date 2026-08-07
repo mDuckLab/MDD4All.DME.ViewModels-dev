@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public class EditorViewModel : ObservableObject, IEditorState
+    public class EditorViewModel : ObservableObject
     {
         #region constructor
         public EditorViewModel(DataFileManagerViewModel dataFileManager)
@@ -121,7 +121,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 OnPropertyChanged(nameof(SelectedEditorViewModel));
             }
-            else if (e.PropertyName == "HasBeenProcessed")
+            else if (e.PropertyName == "TreeChanged")
             {
                 OnPropertyChanged(nameof(SelectedEditorViewModel));
             }

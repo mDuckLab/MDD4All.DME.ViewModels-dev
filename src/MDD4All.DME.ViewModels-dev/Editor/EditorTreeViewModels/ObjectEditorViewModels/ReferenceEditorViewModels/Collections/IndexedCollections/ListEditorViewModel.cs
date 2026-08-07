@@ -141,10 +141,6 @@ namespace MDD4All.DME.ViewModels.Editor
                     {
                         childViewModel.EditorState.IsExpanded = true;
                         this.Children.Add(childViewModel);
-                        if (this.Tree is ObjectTreeViewModel objectTree)
-                        {
-                            objectTree.HasBeenProcessed = true;
-                        }
                     }
 
                     this.StateChanged = true;
@@ -169,11 +165,7 @@ namespace MDD4All.DME.ViewModels.Editor
                 // The ReorderIndexChild method handles updating the Access objects.
                 this.ReorderIndexChild(index);
 
-
-                if (this.Tree is ObjectTreeViewModel objectTree)
-                {
-                    objectTree.HasBeenProcessed = true;
-                }
+                this.StateChanged = true;
             }
         }
         #endregion

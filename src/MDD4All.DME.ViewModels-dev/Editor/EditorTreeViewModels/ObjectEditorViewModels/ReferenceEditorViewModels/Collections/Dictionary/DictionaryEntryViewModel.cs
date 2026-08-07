@@ -158,10 +158,7 @@ namespace MDD4All.DME.ViewModels.Editor
                 {
                     ParentDictionary[this.CurrentKey] = newValue;
 
-                    if (this.Tree is ObjectTreeViewModel objectTree)
-                    {
-                        objectTree.HasBeenProcessed = true;
-                    }
+                    this.StateChanged = true;
                 }
             }
         }

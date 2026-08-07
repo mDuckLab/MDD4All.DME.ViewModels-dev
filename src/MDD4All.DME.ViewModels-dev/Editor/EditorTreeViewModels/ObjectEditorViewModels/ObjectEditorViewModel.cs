@@ -5,6 +5,7 @@ using MDD4All.UI.DataModels.Tree;
 using System;
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Reflection;
@@ -171,7 +172,38 @@ namespace MDD4All.DME.ViewModels.Editor
 
         public ObservableCollection<ITreeNode> Children { get; set; } = null!;
 
-        public ITree? Tree { get; set; }
+        private ITree? _tree;
+
+        // Forwards this node's own StateChanged to the tree automatically.
+        public ITree? Tree
+        {
+            get
+            {
+                return _tree;
+            }
+            set
+            {
+                if (_tree is ObjectTreeViewModel)
+                {
+                    this.PropertyChanged -= OnOwnStateChanged;
+                }
+
+                _tree = value;
+
+                if (_tree is ObjectTreeViewModel)
+                {
+                    this.PropertyChanged += OnOwnStateChanged;
+                }
+            }
+        }
+
+        private void OnOwnStateChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(StateChanged) && _tree is ObjectTreeViewModel objectTree)
+            {
+                objectTree.RaiseTreeChanged();
+            }
+        }
 
         public int Index
         {
@@ -520,8 +552,6 @@ namespace MDD4All.DME.ViewModels.Editor
         // property, an indexed slot in a List/Array, or a dictionary entry. Shared by
         // PrimitivePropertyViewModel (a value replacing itself) and the Reference/
         // Collection editors (a newly created instance replacing a null slot).
-        // TODO fire both HasBeenProcessed and StateChanged for now - revisit whether
-        // these two change-notification paths can be unified too.
         protected void UpdateParentReference()
         {
             if (this.Parent is ObjectEditorViewModel parentVM)
@@ -543,11 +573,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
 
                 parentVM.StateChanged = true;
-
-                if (this.Tree is ObjectTreeViewModel objectTree)
-                {
-                    objectTree.HasBeenProcessed = true;
-                }
             }
         }
 

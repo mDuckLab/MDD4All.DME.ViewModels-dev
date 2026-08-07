@@ -376,10 +376,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 {
                     this.Children.Remove(nodeToRemove);
                 }
-                if (this.Tree is ObjectTreeViewModel objectTree)
-                {
-                    objectTree.HasBeenProcessed = true;
-                }
                 this.StateChanged = true;
             }
         }
@@ -414,11 +410,6 @@ namespace MDD4All.DME.ViewModels.Editor
                     if (entryViewModel != null)
                     {
                         this.Children.Add(entryViewModel);
-
-                        if (this.Tree is ObjectTreeViewModel objectTree)
-                        {
-                            objectTree.HasBeenProcessed = true;
-                        }
                     }
 
                     this.StateChanged = true;

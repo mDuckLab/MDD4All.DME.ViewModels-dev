@@ -172,11 +172,8 @@ namespace MDD4All.DME.ViewModels.Editor
                     // Clear the local state of the value editor
                     this.Item = null;
                     this.Children.Clear();
-                }
 
-                if (this.Tree is ObjectTreeViewModel objectTree)
-                {
-                    objectTree.HasBeenProcessed = true;
+                    entryParent.StateChanged = true;
                 }
             }
         }

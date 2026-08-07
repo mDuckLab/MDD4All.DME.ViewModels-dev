@@ -94,12 +94,9 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        public bool HasBeenProcessed
+        public void RaiseTreeChanged()
         {
-            set 
-            {
-                OnPropertyChanged("HasBeenProcessed");
-            }
+            OnPropertyChanged("TreeChanged");
         }
 
         public ObservableCollection<ITreeNode> TreeRootNodes { get; }
