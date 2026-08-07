@@ -185,7 +185,7 @@ namespace MDD4All.DME.ViewModels.Editor
         #endregion
 
         #region Dictionary Item Generation and Manipulation
-        private void CreatInstance()
+        private void CreateDictionaryInstance()
         {
             Type genericDictType = typeof(Dictionary<,>);
             Type concreteDictType = genericDictType.MakeGenericType(this.KeyType, this.ValueType);
@@ -198,7 +198,7 @@ namespace MDD4All.DME.ViewModels.Editor
             UpdateParentReference();
         }
 
-        private object? CreatUniqueKey()
+        private object? CreateUniqueKey()
         {
             object? result = null;
 
@@ -327,7 +327,7 @@ namespace MDD4All.DME.ViewModels.Editor
             return result;
         }
 
-        private object? CreatDefaultValue()
+        private object? CreateDefaultValue()
         {
             object? result = null;
 
@@ -389,12 +389,12 @@ namespace MDD4All.DME.ViewModels.Editor
 
             if (this.ItemAsDictionary != null)
             {
-                object? uniqueKey = this.CreatUniqueKey();
+                object? uniqueKey = this.CreateUniqueKey();
 
                 // We only proceed if a unique key was successfully generated
                 if (uniqueKey != null)
                 {
-                    object? defaultValue = this.CreatDefaultValue();
+                    object? defaultValue = this.CreateDefaultValue();
 
                     // Add to the underlying dictionary
                     this.ItemAsDictionary.Add(uniqueKey, defaultValue);
@@ -421,7 +421,7 @@ namespace MDD4All.DME.ViewModels.Editor
         #region Comand Execute
         private void ExecuteCreateInstance()
         {
-            this.CreatInstance();
+            this.CreateDictionaryInstance();
         }
 
         private void ExecuteAddItem()
