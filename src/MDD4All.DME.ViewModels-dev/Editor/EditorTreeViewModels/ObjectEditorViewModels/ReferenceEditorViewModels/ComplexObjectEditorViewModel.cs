@@ -1,10 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Input;
@@ -35,11 +34,10 @@ namespace MDD4All.DME.ViewModels.Editor
             this.CreateTree();
         }
 
-
         private void InitializeCommands()
         {
-            // RelayCommand comes from CommunityToolkit.Mvvm.Input -> RelayCommand(Action (Functionpointer) , bool (execute possible))s
-            this.CreateInstanceCommand = new RelayCommand(ExecuteCreatItem);
+            // RelayCommand comes from CommunityToolkit.Mvvm.Input -> RelayCommand(Action (Functionpointer) , bool (execute possible))
+            this.CreateInstanceCommand = new RelayCommand(ExecuteCreateInstance);
         }
 
         public void CreateTree()
@@ -73,7 +71,7 @@ namespace MDD4All.DME.ViewModels.Editor
                             this.Children.Add(childViewModel);
                         }
                     }
-                    catch (Exception ex)
+                    catch
                     {
                     }
                 }
@@ -81,13 +79,8 @@ namespace MDD4All.DME.ViewModels.Editor
                 this.SortChildrenByPrimitiveState();
             }
         }
-        #endregion
 
-        #region UI Prioritization
-        public ICommand CreateInstanceCommand { get; private set; } = null!;
-        #endregion
-
-        #region Sorting Children
+        // Primitive rows first, complex cards after - the order the editor renders in.
         private void SortChildrenByPrimitiveState()
         {
             List<ITreeNode> sortedList = this.Children.OrderBy(child => child is PrimitivePropertyViewModel ? 0 : 1)
@@ -102,8 +95,10 @@ namespace MDD4All.DME.ViewModels.Editor
         }
         #endregion
 
-        #region Comand Execute
-        private void ExecuteCreatItem()
+        #region Commands
+        public ICommand CreateInstanceCommand { get; private set; } = null!;
+
+        private void ExecuteCreateInstance()
         {
             if (this.Type != null)
             {
@@ -112,24 +107,7 @@ namespace MDD4All.DME.ViewModels.Editor
 
                 this.Children.Clear();
 
-                if (this.Access is PropertyAccess propertyAccess)
-                {
-                    ComplexObjectEditorViewModel parentViewModel = (ComplexObjectEditorViewModel)this.Parent!;
-
-                    propertyAccess.PropertyInfo.SetValue(parentViewModel.Item, newInstance);
-                    parentViewModel.StateChanged = true;
-                }
-                else if (this.Access is ListAccess listAccess)
-                {
-                    ListEditorViewModel parentViewModel = (ListEditorViewModel)this.Parent!;
-                    System.Collections.IList? list = parentViewModel.ItemAsList;
-
-                    if (list != null)
-                    {
-                        list[listAccess.Index] = newInstance;
-                        parentViewModel.StateChanged = true;
-                    }
-                }
+                UpdateParentReference();
 
                 this.CreateTree();
 
