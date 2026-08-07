@@ -7,8 +7,6 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
-using System.Reflection;
 
 namespace MDD4All.DME.ViewModels.Editor
 {
@@ -77,9 +75,7 @@ namespace MDD4All.DME.ViewModels.Editor
             : this(tree, access, null, targetType, title, parent, null) { }
         #endregion
 
-        #region properties
-
-        #region Logic / Data properties
+        #region Logic / Data
 
         public Access Access { get; set; } = null!;
 
@@ -249,11 +245,40 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // Required by the ITreeNode interface; never raised by this editor.
         public event EventHandler? TreeStateChanged;
+
+        // Writes this.Item back into wherever Access says it lives in the parent - a
+        // property, an indexed slot in a List/Array, or a dictionary entry. Shared by
+        // PrimitivePropertyViewModel (a value replacing itself) and the Reference/
+        // Collection editors (a newly created instance replacing a null slot).
+        protected void UpdateParentReference()
+        {
+            if (this.Parent is ObjectEditorViewModel parentVM)
+            {
+                if (parentVM is DictionaryEntryViewModel entryParent)
+                {
+                    entryParent.ChangeChild(this.Access, this.Item);
+                }
+                else if (parentVM.Item != null)
+                {
+                    if (this.Access is PropertyAccess propertyAccess)
+                    {
+                        propertyAccess.PropertyInfo.SetValue(parentVM.Item, this.Item);
+                    }
+                    else if (this.Access is IndexedAccess indexedAccess && parentVM.Item is IList list)
+                    {
+                        list[indexedAccess.Index] = this.Item;
+                    }
+                }
+
+                parentVM.StateChanged = true;
+            }
+        }
 
         #endregion
 
-        #region UI / Display properties
+        #region UI / Display
 
         public EditorState EditorState { get; private set; }
 
@@ -342,105 +367,85 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // What the UI shows almost everywhere: Title falls back to this derived
+        // name whenever no explicit title was set (only dictionary Key/Value
+        // children get one). Derived from how the node hangs in its parent,
+        // parallel to the Access hierarchy:
+        // - PropertyAccess:   property name, preferring its [Display] label
+        // - IndexedAccess:    "N. <name>" (ReferenceEditorViewModel) or just "N" (PrimitivePropertyViewModel)
+        // - Dictionary entry: "[Key]" (DictionaryEntryViewModel)
+        // - Root / else:      type name, preferring its [Display] label
         protected virtual string DefaultTitle
         {
             get
             {
-                string result = "";
+                // Prefer the [Display] label from the data model.
+                string? result = GetDisplayAnnotationName();
 
-                if (Access is PropertyAccess propertyAccess)
+                // No label? Then the plain name of what this node hangs on.
+                if (result == null)
                 {
-                    try
-                    {
-                        PropertyInfo propertyInfo = propertyAccess.PropertyInfo;
-
-
-                        foreach (object attr in propertyInfo.GetCustomAttributes(false))
-                        {
-                            Type type = attr.GetType();
-
-                            if (type.Name == "DisplayAttribute")
-                            {
-                                MethodInfo? method = type.GetMethod("GetName");
-                                if (method != null)
-                                {
-                                    object? value = method.Invoke(attr, null);
-
-                                    if (value != null)
-                                    {
-                                        string? stringValue = value.ToString();
-
-                                        if (stringValue != null)
-                                        {
-                                            result = stringValue;
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        result = string.Empty;
-                    }
-
-
-                    if (result == "")
+                    if (Access is PropertyAccess propertyAccess)
                     {
                         result = propertyAccess.PropertyInfo.Name;
                     }
-                }
-                else
-                {
-                    if (Type != null)
+                    else
                     {
-                        try
-                        {
-
-                            foreach (object attr in Type.GetCustomAttributes(false))
-                            {
-                                Type type = attr.GetType();
-
-                                if (type.Name == "DisplayAttribute")
-                                {
-                                    MethodInfo? method = type.GetMethod("GetName");
-                                    if (method != null)
-                                    {
-                                        CultureInfo currentUiCulture = CultureInfo.CurrentUICulture;
-
-                                        ;
-
-                                        object? value = method.Invoke(attr, null);
-
-                                        if (value != null)
-                                        {
-                                            string? stringValue = value.ToString();
-
-                                            if (stringValue != null)
-                                            {
-                                                result = stringValue;
-                                            }
-                                        }
-                                    }
-
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            result = string.Empty;
-                        }
-                    }
-
-                    if (result == string.Empty)
-                    {
-                        result = Type?.Name ?? "Object";
+                        result = Type.Name;
                     }
                 }
 
                 return result;
             }
+        }
+
+        // Reads the [Display(Name = ...)] annotation of the property this node
+        // hangs on (otherwise of its type); null if none is present.
+        private string? GetDisplayAnnotationName()
+        {
+            string? result = null;
+
+            try
+            {
+                // Where to look: the property this node hangs on, or - for the
+                // root and anything not reached via a property - the type itself.
+                object[] attributes;
+
+                if (Access is PropertyAccess propertyAccess)
+                {
+                    // All attribute instances attached to the property, e.g. [Display],
+                    // [DataType], [Required], ... (false = no inherited attributes).
+                    attributes = propertyAccess.PropertyInfo.GetCustomAttributes(false);
+                }
+                else
+                {
+                    attributes = Type.GetCustomAttributes(false);
+                }
+
+                // Find the [Display] attribute among them. "is" checks the type
+                // and casts in one step.
+                foreach (object attribute in attributes)
+                {
+                    if (attribute is DisplayAttribute displayAttribute)
+                    {
+                        // GetName() is the attribute's official API for the Name value -
+                        // a method rather than a property because it can also resolve
+                        // localized names from resource files.
+                        result = displayAttribute.GetName();
+
+                        // The attribute can only appear once, first hit is the only hit.
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Attributes come from a data-model DLL loaded at runtime - if one
+                // of them can't be constructed, act as if no label exists.
+                result = null;
+            }
+
+            return result;
         }
 
         // Reads a [DataType] attribute hint (e.g. "MultilineText") so the editor can pick a fitting input control.
@@ -450,43 +455,26 @@ namespace MDD4All.DME.ViewModels.Editor
             {
                 string? result = null;
 
+                // Only properties carry this annotation - same reading pattern as GetDisplayAnnotationName.
                 if (Access is PropertyAccess propertyAccess)
                 {
                     try
                     {
-                        PropertyInfo propertyInfo = propertyAccess.PropertyInfo;
-
-
-                        foreach (object attr in propertyInfo.GetCustomAttributes(false))
+                        foreach (object attribute in propertyAccess.PropertyInfo.GetCustomAttributes(false))
                         {
-                            Type type = attr.GetType();
-
-                            if (type.Name == "DataTypeAttribute")
+                            if (attribute is DataTypeAttribute dataTypeAttribute)
                             {
-                                MethodInfo? method = type.GetMethod("GetDataTypeName");
-                                if (method != null)
-                                {
-                                    object? value = method.Invoke(attr, null);
-
-                                    if (value != null)
-                                    {
-                                        string? stringValue = value.ToString();
-
-                                        if (stringValue != null)
-                                        {
-                                            result = stringValue;
-                                        }
-                                    }
-                                }
-
+                                result = dataTypeAttribute.GetDataTypeName();
+                                break;
                             }
                         }
                     }
                     catch
                     {
-                        result = string.Empty;
+                        result = null;
                     }
                 }
+
                 return result;
             }
         }
@@ -518,6 +506,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // Hierarchical position path from the root, e.g. "1.2.3" - the index
         public string Level
         {
             get
@@ -541,40 +530,6 @@ namespace MDD4All.DME.ViewModels.Editor
         public bool IsDisabled { get; set; } = false;
 
         public string DragDropOperationInformation { get; set; } = string.Empty;
-
-        #endregion
-
-        #endregion
-
-        #region methods
-
-        // Writes this.Item back into wherever Access says it lives in the parent - a
-        // property, an indexed slot in a List/Array, or a dictionary entry. Shared by
-        // PrimitivePropertyViewModel (a value replacing itself) and the Reference/
-        // Collection editors (a newly created instance replacing a null slot).
-        protected void UpdateParentReference()
-        {
-            if (this.Parent is ObjectEditorViewModel parentVM)
-            {
-                if (parentVM is DictionaryEntryViewModel entryParent)
-                {
-                    entryParent.ChangeChild(this.Access, this.Item);
-                }
-                else if (parentVM.Item != null)
-                {
-                    if (this.Access is PropertyAccess propertyAccess)
-                    {
-                        propertyAccess.PropertyInfo.SetValue(parentVM.Item, this.Item);
-                    }
-                    else if (this.Access is IndexedAccess indexedAccess && parentVM.Item is IList list)
-                    {
-                        list[indexedAccess.Index] = this.Item;
-                    }
-                }
-
-                parentVM.StateChanged = true;
-            }
-        }
 
         #endregion
     }
