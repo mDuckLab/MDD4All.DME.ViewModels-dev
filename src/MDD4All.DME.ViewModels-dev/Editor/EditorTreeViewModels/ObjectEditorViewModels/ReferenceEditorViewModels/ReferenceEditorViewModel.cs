@@ -115,7 +115,7 @@ namespace MDD4All.DME.ViewModels.Editor
                         this.Children.Clear();
 
                         // Notify the parent about the state change
-                        parentViewModel.StateChanged = true;
+                        parentViewModel.RaiseStateChanged();
                     }
                 }
                 else if (this.Access is IndexedAccess indexedAccess && this.Parent is IndexedCollectionEditorViewModel indexedParent)
@@ -145,7 +145,7 @@ namespace MDD4All.DME.ViewModels.Editor
                     this.Item = null;
                     this.Children.Clear();
 
-                    entryParent.StateChanged = true;
+                    entryParent.RaiseStateChanged();
                 }
             }
         }

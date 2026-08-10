@@ -360,7 +360,7 @@ namespace MDD4All.DME.ViewModels.Editor
                 {
                     this.Children.Remove(nodeToRemove);
                 }
-                this.StateChanged = true;
+                this.RaiseStateChanged();
             }
         }
 
@@ -396,7 +396,7 @@ namespace MDD4All.DME.ViewModels.Editor
                         this.Children.Add(entryViewModel);
                     }
 
-                    this.StateChanged = true;
+                    this.RaiseStateChanged();
                 }
             }
         }

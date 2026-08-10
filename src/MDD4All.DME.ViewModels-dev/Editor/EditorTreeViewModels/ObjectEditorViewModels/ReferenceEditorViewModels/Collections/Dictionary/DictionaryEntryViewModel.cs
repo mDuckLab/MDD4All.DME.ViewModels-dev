@@ -148,7 +148,7 @@ namespace MDD4All.DME.ViewModels.Editor
                 {
                     ParentDictionary[this.CurrentKey] = newValue;
 
-                    this.StateChanged = true;
+                    this.RaiseStateChanged();
                 }
             }
         }

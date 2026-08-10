@@ -139,7 +139,7 @@ namespace MDD4All.DME.ViewModels.Editor
 
                         this.Children.Add(childViewModel);
                     }
-                    this.StateChanged = true;
+                    this.RaiseStateChanged();
                 }
             }
         }
@@ -188,7 +188,7 @@ namespace MDD4All.DME.ViewModels.Editor
 
                 this.ReorderIndexChild(index);
 
-                this.StateChanged = true;
+                this.RaiseStateChanged();
             }
         }
         #endregion

@@ -5,7 +5,6 @@ using MDD4All.UI.DataModels.Tree;
 using System;
 using System.Collections;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace MDD4All.DME.ViewModels.Editor
@@ -170,7 +169,6 @@ namespace MDD4All.DME.ViewModels.Editor
 
         private ITree? _tree;
 
-        // Forwards this node's own StateChanged to the tree automatically.
         public ITree? Tree
         {
             get
@@ -179,25 +177,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
             set
             {
-                if (_tree is ObjectTreeViewModel)
-                {
-                    this.PropertyChanged -= OnOwnStateChanged;
-                }
-
                 _tree = value;
-
-                if (_tree is ObjectTreeViewModel)
-                {
-                    this.PropertyChanged += OnOwnStateChanged;
-                }
-            }
-        }
-
-        private void OnOwnStateChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(StateChanged) && _tree is ObjectTreeViewModel objectTree)
-            {
-                objectTree.RaiseTreeChanged();
             }
         }
 
@@ -234,14 +214,14 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        public bool StateChanged
+        // Wraps the magic string so it exists in one place instead of being retyped at every call site.
+        public void RaiseStateChanged()
         {
-            set
+            OnPropertyChanged("StateChanged");
+
+            if (_tree is ObjectTreeViewModel objectTree)
             {
-                if (value == true)
-                {
-                    OnPropertyChanged(nameof(StateChanged));
-                }
+                objectTree.RaiseTreeChanged();
             }
         }
 
@@ -272,7 +252,7 @@ namespace MDD4All.DME.ViewModels.Editor
                     }
                 }
 
-                parentVM.StateChanged = true;
+                parentVM.RaiseStateChanged();
             }
         }
 
@@ -506,7 +486,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        // Hierarchical position path from the root, e.g. "1.2.3" - the index
+        // Hierarchical position path from the root, e.g. "1.2.3" - the index numbers the ShowIndexNumbers setting toggles on and off.
         public string Level
         {
             get
