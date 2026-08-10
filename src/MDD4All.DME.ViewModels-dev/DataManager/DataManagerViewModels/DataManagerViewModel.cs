@@ -1,178 +1,473 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.AspNetCore.Components.Forms;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MDD4All.AssemblyLoading.Contracts;
+using MDD4All.Configuration;
+using MDD4All.Configuration.Contracts;
+using MDD4All.DME.AssemblyTree.ViewModels;
+using MDD4All.DME.Configurations;
+using MDD4All.FileAccess.Contracts;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Threading.Tasks;
+using System.Reflection;
+using System.Threading;
+using System.Windows.Input;
+using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public class DataManagerViewModel : ObservableObject
+    public class DataFileManagerViewModel : ObservableObject
     {
-        private readonly DataEditorViewModel _objectJsonManager;
-        private readonly IFileSaveService _fileSaveService;
-        //private readonly IFileImportService _fileImportService;
+        private readonly IConfigurationReaderWriter<DmeConfiguration> _configurationReaderWriter;
 
-        public DataManagerViewModel(DataEditorViewModel dataManager, IFileSaveService fileSaveService/*, IFileImportService fileImportService*/)
+        private readonly IFileLoader _fileLoader;
+        private readonly IFileSaver _fileSaver;
+        private readonly IAssemblyProvider _assemblyProvider;
+
+        public DataFileManagerViewModel(IFileLoader fileLoader,
+                                        IFileSaver fileSaver,
+                                        IAssemblyProvider assemblyProvider)
         {
-            _objectJsonManager = dataManager;
-            _fileSaveService = fileSaveService;
-            //_fileImportService = fileImportService;
+            _fileLoader = fileLoader;
+            _fileSaver = fileSaver;
+            _assemblyProvider = assemblyProvider;
 
-            _objectJsonManager.PropertyChanged += OnManagerPropertyChanged;
-        }
+            _configurationReaderWriter = new FileConfigurationReaderWriter<DmeConfiguration>("DME");
 
-        public object? ActiveObject
-        {
-            get
+            _configuration = _configurationReaderWriter.GetConfiguration();
+
+            if (_configuration == null)
             {
-                return _objectJsonManager.ActiveObject;
+                _configuration = new DmeConfiguration();
             }
+
+            InitializeCommands();
         }
 
-        public Type? SelectedType
+        private void InitializeCommands()
+        {
+            OpenDataModelCommand = new RelayCommand(ExecuteOpenDataModel);
+            ConfirmOpenDataModelCommand = new RelayCommand<DataModelDescriptor>(ExecuteConfirmOpenDataModelCommand);
+            SetDataModelFromRecentListCommand = new RelayCommand<int>(ExecuteSetDataModelFromRecentList);
+            NewDataFileCommand = new RelayCommand(ExecuteNewDataFile);
+            OpenRecentDataFileCommand = new RelayCommand<int>(ExecuteOpenRecentDataFile);
+            OpenDataFileCommand = new RelayCommand(ExecuteOpenDataFile);
+            ConfirmOpenDataFileCommand = new RelayCommand(ExecuteConfirmOpenDataFile);
+            SaveDataFileCommand = new RelayCommand(ExecuteSaveDataFile);
+            SaveDataFileAsCommand = new RelayCommand(ExecuteSaveDataFileAs);
+        }
+
+        private DmeConfiguration _configuration;
+
+        public DmeConfiguration Configuration
+        {
+            get { return _configuration; }
+            set { _configuration = value; }
+        }
+
+        private DataEditorViewModel? _dataEditorViewModel;
+
+        public DataEditorViewModel? DataEditorViewModel
         {
             get
             {
-                return _objectJsonManager.SelectedType;
+                return _dataEditorViewModel;
             }
-        }
-
-        public List<Type> AvailableTypes
-        {
-            get
+            private set
             {
-                return _objectJsonManager.GetAvailableDataModels();
-            }
-        }
-
-        //Provides a string representation because the View cannot handle System.Type objects directly. 
-        public string? SelectedTypeFullName
-        {
-            get
-            {
-                string? result = null;
-                if (_objectJsonManager.SelectedType != null)
+                if (_dataEditorViewModel != null)
                 {
-                    result = _objectJsonManager.SelectedType.FullName;
+                    _dataEditorViewModel.PropertyChanged -= OnActiveDataEditorPropertyChanged;
+                }
+
+                _dataEditorViewModel = value;
+
+                if (_dataEditorViewModel != null)
+                {
+                    _dataEditorViewModel.PropertyChanged += OnActiveDataEditorPropertyChanged;
+                }
+            }
+        }
+
+        // A freshly assigned DataEditorViewModel starts out empty - LoadFromFile()/
+        // CreateNewInstance() populate ActiveObject a moment later. Notifying our own
+        // subscribers (MainViewModel's tree rebuild) right here would rebuild the tree
+        // from the still-empty object, so wait for ActiveObject itself to change instead.
+        private void OnActiveDataEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DataEditorViewModel.ActiveObject))
+            {
+                OnPropertyChanged(nameof(DataEditorViewModel));
+            }
+        }
+
+        public string StatusText
+        {
+            get
+            {
+                string result = "";
+                if (DataEditorViewModel != null)
+                {
+                    result = "Filename: " + DataEditorViewModel.FileName;
+                    result += " ● Data Model: " + Configuration.CurrentDataModel!.FullTypeName;
                 }
                 return result;
             }
-            set
-            {
-                string? current = this.SelectedTypeFullName;
-                if (current != value)
-                {
-                    List<Type> types = _objectJsonManager.GetAvailableDataModels();
-                    Type? foundType = null;
+        }
 
-                    foreach (Type availableType in types)
+        private AssemblyTreeViewModel? _assemblyTreeViewModel;
+
+        public AssemblyTreeViewModel? AssemblyTreeViewModel
+        {
+            get
+            {
+                return _assemblyTreeViewModel;
+            }
+            private set
+            {
+                _assemblyTreeViewModel = value;
+                OnPropertyChanged(nameof(AssemblyTreeViewModel));
+            }
+        }
+
+        public ICommand OpenDataModelCommand { get; private set; } = null!;
+
+        public ICommand ConfirmOpenDataModelCommand { get; private set; } = null!;
+
+        public ICommand NewDataFileCommand { get; private set; } = null!;
+
+        public ICommand OpenDataFileCommand { get; private set; } = null!;
+
+        public ICommand ConfirmOpenDataFileCommand { get; private set; } = null!;
+
+        public ICommand OpenRecentDataFileCommand { get; private set; } = null!;
+
+        public ICommand SetDataModelFromRecentListCommand { get; private set; } = null!;
+
+        public ICommand SaveDataFileCommand { get; private set; } = null!;
+
+        public ICommand SaveDataFileAsCommand { get; private set; } = null!;
+
+        #region COMMAND_IMPLEMENTATIONS
+
+        private void ExecuteOpenDataModel()
+        {
+            SynchronizationContext.Current?.Post((_) =>
+            {
+                string filename = "";
+                bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
+                                                                 filter: "DLL Files (*.dll)|*.dll",
+                                                                 title: "Open Data Model library file...",
+                                                                 initialDirectory: Configuration.LastUsedDataModelPath
+                                                                 );
+
+                if (openResult == true)
+                {
+                    AssemblyTreeViewModel = new AssemblyTreeViewModel(filename, _assemblyProvider);
+                }
+            }, null);
+        }
+
+        private void ExecuteConfirmOpenDataModelCommand(DataModelDescriptor? descriptor)
+        {
+            if (descriptor != null)
+            {
+                Configuration.CurrentDataModel = descriptor;
+
+                if (Configuration.RecentDataModels.Find(dm => dm.DllPath == descriptor.DllPath && dm.FullTypeName == descriptor.FullTypeName) == null)
+                {
+                    if (Configuration.RecentDataModels.Count == 5)
                     {
-                        if (availableType.FullName == value)
+                        Configuration.RecentDataModels.RemoveAt(4);
+
+                    }
+                    Configuration.RecentDataModels.Insert(0, descriptor);
+
+
+                }
+
+                FileInfo fileInfo = new FileInfo(descriptor.DllPath);
+
+                if (fileInfo.DirectoryName != null)
+                {
+                    Configuration.LastUsedDataModelPath = fileInfo.DirectoryName;
+                }
+            }
+
+            // Closes the type-selection dialog: MainViewModel watches this
+            // property to know when to switch back to the start page.
+            AssemblyTreeViewModel = null;
+        }
+
+        private void ExecuteSetDataModelFromRecentList(int index)
+        {
+            DataModelDescriptor descriptor = Configuration.RecentDataModels[index];
+
+            Configuration.CurrentDataModel = descriptor;
+
+            Configuration.RecentDataModels.RemoveAt(index);
+            Configuration.RecentDataModels.Insert(0, descriptor);
+            _configurationReaderWriter.StoreConfiguration(Configuration);
+        }
+
+        private void ExecuteNewDataFile()
+        {
+            SynchronizationContext.Current?.Post((_) =>
+            {
+                string fileName = "";
+
+                bool dialogResult = _fileSaver.ShowFileSaveDialog(out fileName,
+                                                                  initialDirectory: Configuration.LastUsedDataFilePath,
+                                                                  title: "New data file...",
+                                                                  filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
+                                                                  defaultFileExtension: "json");
+
+                if (dialogResult == true)
+                {
+                    DataModelDescriptor? currentType = Configuration.CurrentDataModel;
+
+                    if (currentType != null)
+                    {
+                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(currentType.DllPath);
+
+                        Type? type = assembly.GetType(currentType.FullTypeName);
+
+                        if (type != null)
                         {
-                            foundType = availableType;
+                            DataEditorViewModel = new DataEditorViewModel(fileName, type, _fileSaver);
+
+                            DataEditorViewModel.CreateNewInstance();
+
+                            SaveDataFileCommand.Execute(null);
+
+                            DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
+                            {
+                                FilePath = fileName,
+                                DataModelDescription = new DataModelDescriptor
+                                {
+                                    DllPath = Configuration.CurrentDataModel!.DllPath,
+                                    FullTypeName = Configuration.CurrentDataModel.FullTypeName
+                                }
+                            };
+
+                            if (Configuration.RecentDataFiles.Count == 5)
+                            {
+                                Configuration.RecentDataFiles.RemoveAt(4);
+                            }
+
+                            Configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
+
+                            _configurationReaderWriter.StoreConfiguration(Configuration);
                         }
                     }
-                    _objectJsonManager.SelectedType = foundType;
 
-                    OnPropertyChanged(nameof(SelectedTypeFullName));
                 }
-            }
+            }, null);
         }
 
-        public bool IsNamespaceFilterActive
+        private void ExecuteOpenRecentDataFile(int index)
         {
-            get
+            DataFileDescriptor descriptor = Configuration.RecentDataFiles[index];
+
+            if (descriptor != null)
             {
-                return _objectJsonManager.IsNamespaceFilterActive;
-            }
-            set
-            {
-                if (_objectJsonManager.IsNamespaceFilterActive != value)
+                Assembly assembly = _assemblyProvider.GetAssemblyByPath(descriptor.DataModelDescription.DllPath);
+
+                Type? type = assembly.GetType(descriptor.DataModelDescription.FullTypeName);
+
+                if (type != null)
                 {
-                    _objectJsonManager.IsNamespaceFilterActive = value;
-                    OnPropertyChanged(nameof(IsNamespaceFilterActive));
-                    OnPropertyChanged(nameof(AvailableTypes));
+                    SetRecentDataFileToTop(index);
+                    Configuration.CurrentDataModel = descriptor.DataModelDescription;
+
+                    SetTopRecentDataModel(descriptor.DataModelDescription);
+                    _configurationReaderWriter.StoreConfiguration(Configuration);
+
+                    DataEditorViewModel = new DataEditorViewModel(descriptor.FilePath, type, _fileSaver);
+
+                    DataEditorViewModel.LoadFromFile();
                 }
             }
         }
 
-        public bool HasActiveObject
+
+        private void ExecuteOpenDataFile()
         {
-            get
+            SynchronizationContext.Current?.Post((_) =>
             {
-                bool result = false;
-                if (_objectJsonManager.ActiveObject != null)
+                if (Configuration.CurrentDataModel != null)
                 {
-                    result = true;
+                    string filename = "";
+                    bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
+                                                                     initialDirectory: Configuration.LastUsedDataFilePath,
+                                                                     filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
+                                                                     title: "Open data file...",
+                                                                     defaultFileExtension: "json");
+
+                    if (openResult == true)
+                    {
+                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(Configuration.CurrentDataModel!.DllPath);
+
+                        Type? type = assembly.GetType(Configuration.CurrentDataModel!.FullTypeName);
+
+                        if (type != null)
+                        {
+                            DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
+                            {
+                                DataModelDescription = Configuration.CurrentDataModel,
+                                FilePath = filename
+                            };
+
+                            AddNewRecentDataFile(dataFileDescriptor);
+
+                            _configurationReaderWriter.StoreConfiguration(Configuration);
+
+                            DataEditorViewModel = new DataEditorViewModel(dataFileDescriptor.FilePath, type, _fileSaver);
+
+                            DataEditorViewModel.LoadFromFile();
+                        }
+                    }
                 }
-                return result;
+            }, null);
+        }
+
+        private void ExecuteConfirmOpenDataFile()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ExecuteSaveDataFile()
+        {
+            FileInfo fileInfo = new FileInfo(DataEditorViewModel!.FileName);
+
+            if (fileInfo.DirectoryName != null)
+            {
+                Configuration.LastUsedDataFilePath = fileInfo.DirectoryName;
+                _configurationReaderWriter.StoreConfiguration(Configuration);
+            }
+
+            if (fileInfo.Extension.ToLower() == ".xml")
+            {
+                SerializeToXml();
+            }
+            else
+            {
+                File.WriteAllText(DataEditorViewModel!.FileName, DataEditorViewModel.ActiveObjectJsonString);
             }
         }
 
-        public void CreateNew()
+        private void ExecuteSaveDataFileAs()
         {
-            _objectJsonManager.CreateNewInstance();
+            SynchronizationContext.Current?.Post((_) =>
+            {
+                string fileName = "";
+
+                bool dialogResult = _fileSaver.ShowFileSaveDialog(out fileName,
+                                                                  initialDirectory: Configuration.LastUsedDataFilePath,
+                                                                  title: "Save data file as...",
+                                                                  filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*");
+
+                if (dialogResult == true)
+                {
+                    FileInfo fileInfo = new FileInfo(fileName);
+
+                    DataEditorViewModel!.FileName = fileName;
+
+                    if (fileInfo.Extension.ToLower() == ".xml")
+                    {
+                        SerializeToXml();
+                    }
+                    else
+                    {
+                        File.WriteAllText(fileName, DataEditorViewModel.ActiveObjectJsonString);
+                    }
+
+                    DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
+                    {
+                        DataModelDescription = Configuration.CurrentDataModel!,
+                        FilePath = fileName
+                    };
+
+                    AddNewRecentDataFile(dataFileDescriptor);
+
+                    if (fileInfo.DirectoryName != null)
+                    {
+                        Configuration.LastUsedDataFilePath = fileInfo.DirectoryName;
+                    }
+
+                    _configurationReaderWriter.StoreConfiguration(Configuration);
+
+                    OnPropertyChanged(nameof(StatusText));
+                }
+
+            }, null);
         }
 
-        //public async Task OpenImportDialog()
-        //{
-        //    // Nutzt den Service, um das UI-Element "importInput" zu aktivieren
-        //    await _fileImportService.OpenImportDialogAsync("importInput");
-        //}
+        #endregion
 
-        // Reads the content of a browser-provided file, converts it to a JSON string,
-        // and passes it to the internal manager to update the application state.
-        public async Task Import(IBrowserFile file)
+        private void SerializeToXml()
         {
-            try
+
+            // Insert code to set properties and fields of the object.
+            XmlSerializer mySerializer = new
+            XmlSerializer(DataEditorViewModel!.SelectedType!);
+            // To write to a file, create a StreamWriter object.
+            StreamWriter myWriter = new StreamWriter(DataEditorViewModel.FileName);
+            mySerializer.Serialize(myWriter, DataEditorViewModel.ActiveObject);
+            myWriter.Close();
+        }
+
+
+        private void SetTopRecentDataModel(DataModelDescriptor modelDescriptor)
+        {
+            if (Configuration.RecentDataModels.Find(dm => dm.DllPath == modelDescriptor.DllPath &&
+                                                          dm.FullTypeName == modelDescriptor.FullTypeName) == null)
             {
-                // Opens a stream to read the file data with a maximum allowed size of 10 MB.
-                Stream stream = file.OpenReadStream(1024 * 1024 * 10);
+                if (Configuration.RecentDataModels.Count == 5)
+                {
+                    Configuration.RecentDataModels.RemoveAt(4);
+                }
 
-                // Initializes a reader to interpret the raw byte stream as UTF-8 text.
-                StreamReader reader = new StreamReader(stream);
-
-                // Asynchronously reads the entire file content into a string.
-                string json = await reader.ReadToEndAsync();
-
-                // Instructs the manager to deserialize the JSON string into actual objects.
-                _objectJsonManager.LoadFromContent(json);
-
-                // Explicitly releases system resources to ensure memory is freed.
-                reader.Dispose();
-                stream.Dispose();
+                Configuration.RecentDataModels.Insert(0, modelDescriptor);
             }
-            catch (Exception exception)
+            else
             {
-#if DEBUG
-                Console.WriteLine(exception.Message);
-#endif
+                int searchIndex = -1;
+                for (int index = 0; index < Configuration.RecentDataModels.Count; index++)
+                {
+                    DataModelDescriptor currentDescriptor = Configuration.RecentDataModels[index];
+                    if (currentDescriptor.FullTypeName == modelDescriptor.FullTypeName &&
+                       currentDescriptor.DllPath == modelDescriptor.DllPath)
+                    {
+                        searchIndex = index;
+                        break;
+                    }
+                }
+
+                if (searchIndex >= 0)
+                {
+                    DataModelDescriptor existingDescriptor = Configuration.RecentDataModels[searchIndex];
+                    Configuration.RecentDataModels.RemoveAt(searchIndex);
+                    Configuration.RecentDataModels.Insert(0, existingDescriptor);
+                }
             }
         }
 
-        public async Task Export()
+        private void SetRecentDataFileToTop(int index)
         {
-            (string FileName, string Base64Data)? package = _objectJsonManager.GetExportPackage();
+            DataFileDescriptor fileDescriptor = Configuration.RecentDataFiles[index];
 
-            if (package != null)
-            {
-                await _fileSaveService.SaveFileAsync(package.Value.FileName, package.Value.Base64Data);
-            }
+            Configuration.RecentDataFiles.RemoveAt(index);
+            Configuration.RecentDataFiles.Insert(0, fileDescriptor);
         }
 
-        private void OnManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void AddNewRecentDataFile(DataFileDescriptor dataFileDescriptor)
         {
-            if (e.PropertyName == "ActiveObject")
+            if (Configuration.RecentDataFiles.Count == 5)
             {
-                OnPropertyChanged(nameof(ActiveObject));
-                OnPropertyChanged(nameof(HasActiveObject));
-            }
-            else if (e.PropertyName == "SelectedType")
-            {
-                OnPropertyChanged(nameof(SelectedType));
-                OnPropertyChanged(nameof(SelectedTypeFullName));
+                Configuration.RecentDataFiles.RemoveAt(4);
+
+                Configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
             }
         }
     }
