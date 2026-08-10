@@ -53,11 +53,6 @@ namespace MDD4All.DME.ViewModels.DataManager
                 ITreeNode? result = null;
                 if (TreeViewModel != null)
                 {
-                    if (TreeViewModel.SelectedNode is ObjectEditorViewModel)
-                    {
-                        ObjectEditorViewModel objectEditorViewModel = (ObjectEditorViewModel)TreeViewModel.SelectedNode;
-                        objectEditorViewModel.EditorState.IsExpanded = true;
-                    }
                     result = TreeViewModel.SelectedNode;
                 }
                 return result;
@@ -111,14 +106,17 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 TreeViewModel = null;
             }
-
-            OnPropertyChanged(nameof(DataEditorViewModel.ActiveObject));
         }
 
         private void OnTreePropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "SelectedNode")
             {
+                if (TreeViewModel?.SelectedNode is ObjectEditorViewModel selectedNode)
+                {
+                    selectedNode.EditorState.IsExpanded = true;
+                }
+
                 OnPropertyChanged(nameof(SelectedEditorViewModel));
             }
             else if (e.PropertyName == "TreeChanged")
