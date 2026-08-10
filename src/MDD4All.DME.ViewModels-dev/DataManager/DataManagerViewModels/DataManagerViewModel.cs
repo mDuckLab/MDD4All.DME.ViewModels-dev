@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MDD4All.AssemblyLoading.Contracts;
-using MDD4All.Configuration;
-using MDD4All.Configuration.Contracts;
 using MDD4All.DME.AssemblyTree.ViewModels;
 using MDD4All.DME.Configurations;
 using MDD4All.FileAccess.Contracts;
@@ -21,20 +19,13 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region constructor
         public DataManagerViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
-                                        IAssemblyProvider assemblyProvider)
+                                        IAssemblyProvider assemblyProvider,
+                                        DataManagerSettingsViewModel dataManagerSettings)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
             _assemblyProvider = assemblyProvider;
-
-            _configurationReaderWriter = new FileConfigurationReaderWriter<DmeConfiguration>("DME");
-
-            _configuration = _configurationReaderWriter.GetConfiguration();
-
-            if (_configuration == null)
-            {
-                _configuration = new DmeConfiguration();
-            }
+            _dataManagerSettings = dataManagerSettings;
 
             this.InitializeCommands();
         }
@@ -54,27 +45,13 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Properties
-        private readonly IConfigurationReaderWriter<DmeConfiguration> _configurationReaderWriter;
-
         private readonly IFileLoader _fileLoader;
         private readonly IFileSaver _fileSaver;
 
         // Needed because the data model is a DLL picked by the user at runtime, not known at compile time.
         private readonly IAssemblyProvider _assemblyProvider;
 
-        private DmeConfiguration _configuration;
-
-        public DmeConfiguration Configuration
-        {
-            get
-            {
-                return _configuration;
-            }
-            set
-            {
-                _configuration = value;
-            }
-        }
+        private readonly DataManagerSettingsViewModel _dataManagerSettings;
 
         private DataEditorViewModel? _dataEditorViewModel;
 
@@ -108,9 +85,17 @@ namespace MDD4All.DME.ViewModels.DataManager
                 if (this.DataEditorViewModel != null)
                 {
                     result = "Filename: " + this.DataEditorViewModel.FileName;
-                    result += " ● Data Model: " + this.Configuration.CurrentDataModel!.FullTypeName;
+                    result += " ● Data Model: " + _dataManagerSettings.CurrentDataModel!.FullTypeName;
                 }
                 return result;
+            }
+        }
+
+        public DmeConfiguration Configuration
+        {
+            get
+            {
+                return _dataManagerSettings.Configuration;
             }
         }
 
@@ -173,7 +158,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
                                                                  filter: "DLL Files (*.dll)|*.dll",
                                                                  title: "Open Data Model library file...",
-                                                                 initialDirectory: this.Configuration.LastUsedDataModelPath
+                                                                 initialDirectory: _dataManagerSettings.LastUsedDataModelPath
                                                                  );
 
                 if (openResult == true)
@@ -187,25 +172,15 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             if (descriptor != null)
             {
-                this.Configuration.CurrentDataModel = descriptor;
+                _dataManagerSettings.CurrentDataModel = descriptor;
 
-                if (this.Configuration.RecentDataModels.Find(dm => dm.DllPath == descriptor.DllPath && dm.FullTypeName == descriptor.FullTypeName) == null)
-                {
-                    if (this.Configuration.RecentDataModels.Count == 5)
-                    {
-                        this.Configuration.RecentDataModels.RemoveAt(4);
-
-                    }
-                    this.Configuration.RecentDataModels.Insert(0, descriptor);
-
-
-                }
+                _dataManagerSettings.SetTopRecentDataModel(descriptor);
 
                 FileInfo fileInfo = new FileInfo(descriptor.DllPath);
 
                 if (fileInfo.DirectoryName != null)
                 {
-                    this.Configuration.LastUsedDataModelPath = fileInfo.DirectoryName;
+                    _dataManagerSettings.LastUsedDataModelPath = fileInfo.DirectoryName;
                 }
             }
 
@@ -216,13 +191,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteSetDataModelFromRecentList(int index)
         {
-            DataModelDescriptor descriptor = this.Configuration.RecentDataModels[index];
+            DataModelDescriptor descriptor = _dataManagerSettings.RecentDataModels[index];
 
-            this.Configuration.CurrentDataModel = descriptor;
+            _dataManagerSettings.CurrentDataModel = descriptor;
 
-            this.Configuration.RecentDataModels.RemoveAt(index);
-            this.Configuration.RecentDataModels.Insert(0, descriptor);
-            _configurationReaderWriter.StoreConfiguration(this.Configuration);
+            _dataManagerSettings.SetTopRecentDataModel(descriptor);
         }
 
         private void ExecuteNewDataFile()
@@ -232,14 +205,14 @@ namespace MDD4All.DME.ViewModels.DataManager
                 string fileName = "";
 
                 bool dialogResult = _fileSaver.ShowFileSaveDialog(out fileName,
-                                                                  initialDirectory: this.Configuration.LastUsedDataFilePath,
+                                                                  initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
                                                                   title: "New data file...",
                                                                   filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
                                                                   defaultFileExtension: "json");
 
                 if (dialogResult == true)
                 {
-                    DataModelDescriptor? currentType = this.Configuration.CurrentDataModel;
+                    DataModelDescriptor? currentType = _dataManagerSettings.CurrentDataModel;
 
                     if (currentType != null)
                     {
@@ -260,19 +233,12 @@ namespace MDD4All.DME.ViewModels.DataManager
                                 FilePath = fileName,
                                 DataModelDescription = new DataModelDescriptor
                                 {
-                                    DllPath = this.Configuration.CurrentDataModel!.DllPath,
-                                    FullTypeName = this.Configuration.CurrentDataModel.FullTypeName
+                                    DllPath = _dataManagerSettings.CurrentDataModel!.DllPath,
+                                    FullTypeName = _dataManagerSettings.CurrentDataModel.FullTypeName
                                 }
                             };
 
-                            if (this.Configuration.RecentDataFiles.Count == 5)
-                            {
-                                this.Configuration.RecentDataFiles.RemoveAt(4);
-                            }
-
-                            this.Configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
-
-                            _configurationReaderWriter.StoreConfiguration(this.Configuration);
+                            _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
                         }
                     }
 
@@ -282,7 +248,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteOpenRecentDataFile(int index)
         {
-            DataFileDescriptor descriptor = this.Configuration.RecentDataFiles[index];
+            DataFileDescriptor descriptor = _dataManagerSettings.RecentDataFiles[index];
 
             if (descriptor != null)
             {
@@ -292,11 +258,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (type != null)
                 {
-                    this.SetRecentDataFileToTop(index);
-                    this.Configuration.CurrentDataModel = descriptor.DataModelDescription;
+                    _dataManagerSettings.SetRecentDataFileToTop(index);
+                    _dataManagerSettings.CurrentDataModel = descriptor.DataModelDescription;
 
-                    this.SetTopRecentDataModel(descriptor.DataModelDescription);
-                    _configurationReaderWriter.StoreConfiguration(this.Configuration);
+                    _dataManagerSettings.SetTopRecentDataModel(descriptor.DataModelDescription);
 
                     this.DataEditorViewModel = new DataEditorViewModel(descriptor.FilePath, type, _fileSaver);
 
@@ -309,32 +274,30 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             SynchronizationContext.Current?.Post((_) =>
             {
-                if (this.Configuration.CurrentDataModel != null)
+                if (_dataManagerSettings.CurrentDataModel != null)
                 {
                     string filename = "";
                     bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
-                                                                     initialDirectory: this.Configuration.LastUsedDataFilePath,
+                                                                     initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
                                                                      filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
                                                                      title: "Open data file...",
                                                                      defaultFileExtension: "json");
 
                     if (openResult == true)
                     {
-                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(this.Configuration.CurrentDataModel!.DllPath);
+                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(_dataManagerSettings.CurrentDataModel!.DllPath);
 
-                        Type? type = assembly.GetType(this.Configuration.CurrentDataModel!.FullTypeName);
+                        Type? type = assembly.GetType(_dataManagerSettings.CurrentDataModel!.FullTypeName);
 
                         if (type != null)
                         {
                             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
                             {
-                                DataModelDescription = this.Configuration.CurrentDataModel,
+                                DataModelDescription = _dataManagerSettings.CurrentDataModel,
                                 FilePath = filename
                             };
 
-                            this.AddNewRecentDataFile(dataFileDescriptor);
-
-                            _configurationReaderWriter.StoreConfiguration(this.Configuration);
+                            _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
                             this.DataEditorViewModel = new DataEditorViewModel(dataFileDescriptor.FilePath, type, _fileSaver);
 
@@ -356,8 +319,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (fileInfo.DirectoryName != null)
             {
-                this.Configuration.LastUsedDataFilePath = fileInfo.DirectoryName;
-                _configurationReaderWriter.StoreConfiguration(this.Configuration);
+                _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
             }
 
             if (fileInfo.Extension.ToLower() == ".xml")
@@ -377,7 +339,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 string fileName = "";
 
                 bool dialogResult = _fileSaver.ShowFileSaveDialog(out fileName,
-                                                                  initialDirectory: this.Configuration.LastUsedDataFilePath,
+                                                                  initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
                                                                   title: "Save data file as...",
                                                                   filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*");
 
@@ -398,18 +360,16 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
                     {
-                        DataModelDescription = this.Configuration.CurrentDataModel!,
+                        DataModelDescription = _dataManagerSettings.CurrentDataModel!,
                         FilePath = fileName
                     };
 
-                    this.AddNewRecentDataFile(dataFileDescriptor);
+                    _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
                     if (fileInfo.DirectoryName != null)
                     {
-                        this.Configuration.LastUsedDataFilePath = fileInfo.DirectoryName;
+                        _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
                     }
-
-                    _configurationReaderWriter.StoreConfiguration(this.Configuration);
 
                     this.OnPropertyChanged(nameof(StatusText));
                 }
@@ -429,59 +389,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             StreamWriter myWriter = new StreamWriter(this.DataEditorViewModel.FileName);
             mySerializer.Serialize(myWriter, this.DataEditorViewModel.ActiveObject);
             myWriter.Close();
-        }
-
-        private void SetTopRecentDataModel(DataModelDescriptor modelDescriptor)
-        {
-            if (this.Configuration.RecentDataModels.Find(dm => dm.DllPath == modelDescriptor.DllPath &&
-                                                          dm.FullTypeName == modelDescriptor.FullTypeName) == null)
-            {
-                if (this.Configuration.RecentDataModels.Count == 5)
-                {
-                    this.Configuration.RecentDataModels.RemoveAt(4);
-                }
-
-                this.Configuration.RecentDataModels.Insert(0, modelDescriptor);
-            }
-            else
-            {
-                int searchIndex = -1;
-                for (int index = 0; index < this.Configuration.RecentDataModels.Count; index++)
-                {
-                    DataModelDescriptor currentDescriptor = this.Configuration.RecentDataModels[index];
-                    if (currentDescriptor.FullTypeName == modelDescriptor.FullTypeName &&
-                       currentDescriptor.DllPath == modelDescriptor.DllPath)
-                    {
-                        searchIndex = index;
-                        break;
-                    }
-                }
-
-                if (searchIndex >= 0)
-                {
-                    DataModelDescriptor existingDescriptor = this.Configuration.RecentDataModels[searchIndex];
-                    this.Configuration.RecentDataModels.RemoveAt(searchIndex);
-                    this.Configuration.RecentDataModels.Insert(0, existingDescriptor);
-                }
-            }
-        }
-
-        private void SetRecentDataFileToTop(int index)
-        {
-            DataFileDescriptor fileDescriptor = this.Configuration.RecentDataFiles[index];
-
-            this.Configuration.RecentDataFiles.RemoveAt(index);
-            this.Configuration.RecentDataFiles.Insert(0, fileDescriptor);
-        }
-
-        private void AddNewRecentDataFile(DataFileDescriptor dataFileDescriptor)
-        {
-            if (this.Configuration.RecentDataFiles.Count == 5)
-            {
-                this.Configuration.RecentDataFiles.RemoveAt(4);
-
-                this.Configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
-            }
         }
         #endregion
     }
