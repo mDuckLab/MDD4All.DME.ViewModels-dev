@@ -8,7 +8,7 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class MainViewModel : ObservableObject
     {
         #region constructor
-        public MainViewModel(ILanguageSetter languageSetter, DataFileManagerViewModel dataFileManager)
+        public MainViewModel(ILanguageSetter languageSetter, DataManagerViewModel dataFileManager)
         {
             _languageSetter = languageSetter;
             _languageSetter.CultureChanged += OnCultureChanged;
@@ -22,7 +22,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private ILanguageSetter _languageSetter;
 
-        private DataFileManagerViewModel _dataFileManager;
+        private DataManagerViewModel _dataFileManager;
 
         private EViewState _viewState = EViewState.ShowStartPage;
 
@@ -83,11 +83,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataFileManagerViewModel.DataEditorViewModel))
+            if (e.PropertyName == nameof(DataManagerViewModel.DataEditorViewModel))
             {
                 ViewState = EViewState.ShowEditor;
             }
-            else if (e.PropertyName == nameof(DataFileManagerViewModel.AssemblyTreeViewModel))
+            else if (e.PropertyName == nameof(DataManagerViewModel.AssemblyTreeViewModel))
             {
                 ActiveOverlay = _dataFileManager.AssemblyTreeViewModel != null
                     ? EOverlayState.TypeSelection
