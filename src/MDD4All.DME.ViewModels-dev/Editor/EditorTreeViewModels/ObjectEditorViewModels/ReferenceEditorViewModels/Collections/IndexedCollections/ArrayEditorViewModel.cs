@@ -64,10 +64,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
                 return result;
             }
-            private set
-            {
-                Item = value;
-            }
         }
 
         private void CreateArrayInstance(int length = 0)

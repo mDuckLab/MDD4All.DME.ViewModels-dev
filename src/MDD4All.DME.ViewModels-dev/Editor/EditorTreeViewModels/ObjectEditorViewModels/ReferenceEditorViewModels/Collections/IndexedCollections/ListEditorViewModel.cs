@@ -67,10 +67,6 @@ namespace MDD4All.DME.ViewModels.Editor
 
                 return result;
             }
-            private set
-            {
-                Item = value;
-            }
         }
 
         private void CreateListInstance()

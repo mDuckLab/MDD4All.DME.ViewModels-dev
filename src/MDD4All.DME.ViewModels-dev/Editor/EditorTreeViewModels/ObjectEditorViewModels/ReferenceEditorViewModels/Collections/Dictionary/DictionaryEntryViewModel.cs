@@ -1,4 +1,4 @@
-﻿using MDD4All.Reflection;
+using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
 using System;
@@ -25,7 +25,7 @@ namespace MDD4All.DME.ViewModels.Editor
         }
         #endregion
 
-        #region properties
+        #region Logic / Data
         private object _currentKey = null!;
 
         public object CurrentKey
@@ -120,16 +120,6 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
-        protected override string DefaultTitle
-        {
-            get
-            {
-                string result = $"[{this.CurrentKey}]";
-                return result;
-            }
-        }
-        #endregion
-
         public void ChangeChild(Access childAccess, object? newValue)
         {
             if (this.ParentDictionary != null)
@@ -162,5 +152,17 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
+        #endregion
+
+        #region UI / Display
+        protected override string DefaultTitle
+        {
+            get
+            {
+                string result = $"[{this.CurrentKey}]";
+                return result;
+            }
+        }
+        #endregion
     }
 }

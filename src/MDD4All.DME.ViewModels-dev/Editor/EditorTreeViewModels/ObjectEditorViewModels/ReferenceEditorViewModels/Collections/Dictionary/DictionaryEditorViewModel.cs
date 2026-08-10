@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using MDD4All.Reflection;
 using MDD4All.ObjectGraph.Access;
 using MDD4All.UI.DataModels.Tree;
@@ -45,12 +45,12 @@ namespace MDD4All.DME.ViewModels.Editor
 
         private void InitializeCommands()
         {
-            this.DeleteByKeyCommand = new RelayCommand<object?>(this.ExecuteDeleteByKey);
-            this.AddElementCommand = new RelayCommand(this.ExecuteAddItem);
+            this.AddItemCommand = new RelayCommand(this.ExecuteAddItem);
             this.CreateInstanceCommand = new RelayCommand(this.ExecuteCreateInstance);
+            this.DeleteByKeyCommand = new RelayCommand<object?>(this.ExecuteDeleteByKey);
         }
 
-        private void CreateTree()
+        public void CreateTree()
         {
             if (ItemAsDictionary != null)
             {
@@ -70,18 +70,9 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
             }
         }
-
         #endregion
 
-        #region Comand Definitions
-        public ICommand AddElementCommand { get; protected set; } = null!;
-
-        public ICommand CreateInstanceCommand { get; protected set; } = null!;
-
-        public ICommand DeleteByKeyCommand { get; protected set; } = null!;
-        #endregion
-
-        #region Properties
+        #region Logic / Data
         public IDictionary? ItemAsDictionary
         {
             get
@@ -94,10 +85,6 @@ namespace MDD4All.DME.ViewModels.Editor
                 }
 
                 return result;
-            }
-            private set
-            {
-                Item = value;
             }
         }
 
@@ -182,16 +169,13 @@ namespace MDD4All.DME.ViewModels.Editor
                 return result;
             }
         }
-        #endregion
 
-        #region Dictionary Item Generation and Manipulation
         private void CreateDictionaryInstance()
         {
             Type genericDictType = typeof(Dictionary<,>);
             Type concreteDictType = genericDictType.MakeGenericType(this.KeyType, this.ValueType);
 
             object? dynamicDict = Activator.CreateInstance(concreteDictType);
-
 
             this.Item = dynamicDict;
             this.Children.Clear();
@@ -418,7 +402,13 @@ namespace MDD4All.DME.ViewModels.Editor
         }
         #endregion
 
-        #region Comand Execute
+        #region Commands
+        public ICommand AddItemCommand { get; protected set; } = null!;
+
+        public ICommand CreateInstanceCommand { get; protected set; } = null!;
+
+        public ICommand DeleteByKeyCommand { get; protected set; } = null!;
+
         private void ExecuteCreateInstance()
         {
             this.CreateDictionaryInstance();
