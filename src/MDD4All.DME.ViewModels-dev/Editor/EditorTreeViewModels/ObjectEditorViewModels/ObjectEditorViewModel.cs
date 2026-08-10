@@ -459,6 +459,7 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // Required by the ITreeNode interface; the actual expand state lives on EditorState.IsExpanded instead.
         public bool IsExpanded { get; set; }
 
         public bool IsSelected
