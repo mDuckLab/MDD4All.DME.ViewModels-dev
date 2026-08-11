@@ -8,13 +8,18 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class MainViewModel : ObservableObject
     {
         #region constructor
-        public MainViewModel(ILanguageSetter languageSetter, DataManagerFileViewModel dataFileManager)
+        public MainViewModel(ILanguageSetter languageSetter,
+                             DataManagerFileViewModel dataFileManager,
+                             DataManagerModelViewModel dataModelManager)
         {
             _languageSetter = languageSetter;
             _languageSetter.CultureChanged += OnCultureChanged;
 
             _dataFileManager = dataFileManager;
             _dataFileManager.PropertyChanged += OnDataFileManagerPropertyChanged;
+
+            _dataModelManager = dataModelManager;
+            _dataModelManager.PropertyChanged += OnDataModelManagerPropertyChanged;
         }
         #endregion
 
@@ -24,9 +29,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private DataManagerFileViewModel _dataFileManager;
 
-        private EViewState _viewState = EViewState.ShowStartPage;
+        private DataManagerModelViewModel _dataModelManager;
 
-        public EViewState ViewState
+        private ViewState _viewState = ViewState.ShowStartPage;
+
+        public ViewState ViewState
         {
             get
             {
@@ -41,9 +48,9 @@ namespace MDD4All.DME.ViewModels.DataManager
         }
 
         // At most one overlay is ever open at once (modals block everything else).
-        private EOverlayState _activeOverlay = EOverlayState.None;
+        private OverlayState _activeOverlay = OverlayState.None;
 
-        public EOverlayState ActiveOverlay
+        public OverlayState ActiveOverlay
         {
             get
             {
@@ -63,13 +70,13 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         public void OpenSettings()
         {
-            ActiveOverlay = EOverlayState.Settings;
+            ActiveOverlay = OverlayState.Settings;
         }
 
         public void ShowStartPage()
         {
             // TODO save changes
-            ViewState = EViewState.ShowStartPage;
+            ViewState = ViewState.ShowStartPage;
         }
 
         #endregion
@@ -78,20 +85,29 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void OnCultureChanged(object? sender, EventArgs e)
         {
-            ActiveOverlay = EOverlayState.CultureChange;
+            ActiveOverlay = OverlayState.CultureChange;
         }
 
         private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(DataManagerFileViewModel.DataEditorViewModel))
             {
-                ViewState = EViewState.ShowEditor;
+                ViewState = ViewState.ShowEditor;
             }
-            else if (e.PropertyName == nameof(DataManagerFileViewModel.AssemblyTreeViewModel))
+        }
+
+        private void OnDataModelManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DataManagerModelViewModel.AssemblyTreeViewModel))
             {
-                ActiveOverlay = _dataFileManager.AssemblyTreeViewModel != null
-                    ? EOverlayState.TypeSelection
-                    : EOverlayState.None;
+                if (_dataModelManager.AssemblyTreeViewModel != null)
+                {
+                    ActiveOverlay = OverlayState.TypeSelection;
+                }
+                else
+                {
+                    ActiveOverlay = OverlayState.None;
+                }
             }
         }
 

@@ -1,6 +1,6 @@
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public enum EOverlayState
+    public enum OverlayState
     {
         None,
         Settings,
