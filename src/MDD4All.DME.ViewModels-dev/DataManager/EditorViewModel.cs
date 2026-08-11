@@ -9,7 +9,7 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class EditorViewModel : ObservableObject
     {
         #region constructor
-        public EditorViewModel(DataManagerViewModel dataFileManager)
+        public EditorViewModel(DataManagerFileViewModel dataFileManager)
         {
             _dataFileManager = dataFileManager;
             _dataFileManager.PropertyChanged += OnDataFileManagerPropertyChanged;
@@ -26,7 +26,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private ObjectTreeViewModel? _treeViewModel;
 
-        private DataManagerViewModel _dataFileManager;
+        private DataManagerFileViewModel _dataFileManager;
 
         public ObjectTreeViewModel? TreeViewModel
         {
@@ -80,7 +80,7 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region Event Handlers
         private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataManagerViewModel.DataEditorViewModel))
+            if (e.PropertyName == nameof(DataManagerFileViewModel.DataEditorViewModel))
             {
                 RebuildTree();
             }

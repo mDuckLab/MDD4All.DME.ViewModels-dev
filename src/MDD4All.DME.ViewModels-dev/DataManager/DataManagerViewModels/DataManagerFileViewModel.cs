@@ -14,10 +14,10 @@ using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public class DataManagerViewModel : ObservableObject
+    public class DataManagerFileViewModel : ObservableObject
     {
         #region constructor
-        public DataManagerViewModel(IFileLoader fileLoader,
+        public DataManagerFileViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
                                         IAssemblyProvider assemblyProvider,
                                         DataManagerSettingsViewModel dataManagerSettings,
@@ -249,32 +249,44 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             SynchronizationContext.Current?.Post((_) =>
             {
-                if (_dataManagerSettings.CurrentDataModel != null)
+                string filename = "";
+                bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
+                                                                 initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
+                                                                 filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
+                                                                 title: "Open data file...",
+                                                                 defaultFileExtension: "json");
+
+                if (openResult == true)
                 {
-                    string filename = "";
-                    bool openResult = _fileLoader.ShowOpenFileDialog(out filename,
-                                                                     initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
-                                                                     filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
-                                                                     title: "Open data file...",
-                                                                     defaultFileExtension: "json");
+                    // The file names the type it was saved as, so its model is looked up from the
+                    // file itself - only if that fails does the currently selected one apply.
+                    DataModelDescriptor? descriptor = this.FindDataModelForFile(filename);
 
-                    if (openResult == true)
+                    if (descriptor == null)
                     {
-                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(_dataManagerSettings.CurrentDataModel!.DllPath);
+                        descriptor = _dataManagerSettings.CurrentDataModel;
+                    }
 
-                        Type? type = assembly.GetType(_dataManagerSettings.CurrentDataModel!.FullTypeName);
+                    if (descriptor != null)
+                    {
+                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(descriptor.DllPath);
+
+                        Type? type = assembly.GetType(descriptor.FullTypeName);
 
                         if (type != null)
                         {
+                            _dataManagerSettings.CurrentDataModel = descriptor;
+                            _dataManagerSettings.SetTopRecentDataModel(descriptor);
+
                             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
                             {
-                                DataModelDescription = _dataManagerSettings.CurrentDataModel,
+                                DataModelDescription = descriptor,
                                 FilePath = filename
                             };
 
                             _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
-                            this.DataEditorViewModel = new DataEditorViewModel(dataFileDescriptor.FilePath, type, _fileSaver);
+                            this.DataEditorViewModel = new DataEditorViewModel(filename, type, _fileSaver);
 
                             this.DataEditorViewModel.LoadFromFile();
                         }
@@ -296,6 +308,9 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
             }
+
+            // Read at save time, so toggling the setting takes effect without reopening the file.
+            this.DataEditorViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
             if (fileInfo.Extension.ToLower() == ".xml")
             {
@@ -323,6 +338,9 @@ namespace MDD4All.DME.ViewModels.DataManager
                     FileInfo fileInfo = new FileInfo(fileName);
 
                     this.DataEditorViewModel!.FileName = fileName;
+
+                    // Read at save time, so toggling the setting takes effect without reopening the file.
+                    this.DataEditorViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
                     if (fileInfo.Extension.ToLower() == ".xml")
                     {
@@ -354,6 +372,54 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Helpers
+        // A saved file names its own type assembly-qualified ("Namespace.Type, AssemblyName"), so the
+        // model it belongs to can be derived from the file instead of having to be picked beforehand.
+        private DataModelDescriptor? FindDataModelForFile(string filePath)
+        {
+            DataModelDescriptor? result = null;
+
+            if (filePath.ToLower().EndsWith("json"))
+            {
+                string? qualifiedTypeName = DataEditorViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
+
+                if (qualifiedTypeName != null)
+                {
+                    string[] typeNameParts = qualifiedTypeName.Split(',');
+
+                    string typeName = typeNameParts[0].Trim();
+
+                    if (typeNameParts.Length > 1)
+                    {
+                        // Data model DLLs referenced by the application end up next to it.
+                        string assemblyName = typeNameParts[1].Trim();
+                        string dllPath = Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll");
+
+                        if (File.Exists(dllPath))
+                        {
+                            result = new DataModelDescriptor
+                            {
+                                DllPath = dllPath,
+                                FullTypeName = typeName
+                            };
+                        }
+                    }
+
+                    // Not next to the application, so it can only be a model loaded from elsewhere -
+                    // keep that DLL and take just the type the file actually names.
+                    if (result == null && _dataManagerSettings.CurrentDataModel != null)
+                    {
+                        result = new DataModelDescriptor
+                        {
+                            DllPath = _dataManagerSettings.CurrentDataModel.DllPath,
+                            FullTypeName = typeName
+                        };
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private void SerializeToXml()
         {
 

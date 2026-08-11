@@ -126,6 +126,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         public bool ShowXml { get; set; }
 
+        // Set from the corresponding setting before saving, so the written file can carry
+        // its own type and be reopened without picking the matching data model first.
+        public bool IncludeTypeInformation { get; set; } = false;
+
         public string ActiveObjectJsonString
         {
             get
@@ -134,7 +138,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (ActiveObject != null && SelectedType != null)
                 {
-                    result = DynamicInvoker.SerializeJson(ActiveObject);
+                    result = DynamicInvoker.SerializeJson(ActiveObject, IncludeTypeInformation);
                 }
 
                 return result;
@@ -261,6 +265,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 }
                 catch (Exception exception)
                 {
+                    Console.WriteLine(exception);
                 }
             }
             else if(FileName.ToLower().EndsWith("xml"))
@@ -277,9 +282,34 @@ namespace MDD4All.DME.ViewModels.DataManager
                 }
                 catch(Exception exception)
                 {
-
+                    Console.WriteLine(exception);
                 }
             }
+        }
+
+        // Reads only the $type metadata Json.NET wrote into the file, without deserializing the rest.
+        // The result is assembly-qualified ("Namespace.Type, AssemblyName") - callers that need the
+        // plain type name have to strip the assembly part themselves.
+        public static string? ReadTypeNameFromJson(string jsonContent)
+        {
+            string? result = null;
+
+            try
+            {
+                Newtonsoft.Json.Linq.JObject rawJson = Newtonsoft.Json.Linq.JObject.Parse(jsonContent);
+                Newtonsoft.Json.Linq.JToken? typeToken = rawJson["$type"];
+
+                if (typeToken != null)
+                {
+                    result = typeToken.ToString();
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+
+            return result;
         }
 
         public object? LoadFromContent(string jsonContent)
@@ -288,20 +318,16 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (!string.IsNullOrEmpty(jsonContent))
             {
-                try
+                string? typeName = ReadTypeNameFromJson(jsonContent);
+
+                if (typeName != null)
                 {
-                    // Parse the raw JSON string into a JObject to inspect its properties manually
-                    Newtonsoft.Json.Linq.JObject rawJson = Newtonsoft.Json.Linq.JObject.Parse(jsonContent);
+                    // Convert the type string into a real C# System.Type
+                    Type? type = FindTypeByFullName(typeName);
 
-                    // Search for the "$type" property which holds the class metadata
-                    Newtonsoft.Json.Linq.JToken? typeToken = rawJson["$type"];
-
-                    if (typeToken != null)
+                    if (type != null)
                     {
-                        // Convert the type string into a real C# System.Type
-                        Type? type = FindTypeByFullName(typeToken.ToString());
-
-                        if (type != null)
+                        try
                         {
                             // Update the manager's selected type to match the imported data
                             this.SelectedType = type;
@@ -312,13 +338,13 @@ namespace MDD4All.DME.ViewModels.DataManager
                             // Assign the result to ActiveObject to trigger a UI and tree refresh
                             this.ActiveObject = result;
                         }
-                    }
-                }
-                catch (Exception ex)
-                {
+                        catch (Exception ex)
+                        {
 #if DEBUG
-                    Console.WriteLine(ex.Message);
+                            Console.WriteLine(ex.Message);
 #endif
+                        }
+                    }
                 }
             }
             return result;

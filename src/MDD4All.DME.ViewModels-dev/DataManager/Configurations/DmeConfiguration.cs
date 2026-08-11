@@ -15,5 +15,9 @@ namespace MDD4All.DME.Configurations
         public string LastUsedDataModelPath {  get; set; } = string.Empty;
 
         public string DesiredLanguage {  get; set; } = "en-US";
+
+        // Writes the root object's type into the saved file, so opening it later can restore
+        // the matching data model instead of relying on whichever one is currently selected.
+        public bool SaveTypeInformation { get; set; } = false;
     }
 }

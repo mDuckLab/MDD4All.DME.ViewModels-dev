@@ -93,6 +93,20 @@ namespace MDD4All.DME.ViewModels.DataManager
                 this.OnPropertyChanged(nameof(LastUsedDataModelPath));
             }
         }
+
+        public bool SaveTypeInformation
+        {
+            get
+            {
+                return _configuration.SaveTypeInformation;
+            }
+            set
+            {
+                _configuration.SaveTypeInformation = value;
+                this.Persist();
+                this.OnPropertyChanged(nameof(SaveTypeInformation));
+            }
+        }
         #endregion
 
         #region Helpers

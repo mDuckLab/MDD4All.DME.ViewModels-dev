@@ -29,7 +29,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             throw new Exception("Helper.dll nicht im gleichen AssemblyLoadContext geladen.");
         }
 
-        public static string SerializeJson(object obj)
+        public static string SerializeJson(object obj, bool includeTypeInformation)
         {
             Type type = obj.GetType();
             Assembly assembly = type.Assembly;
@@ -44,7 +44,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 {
                     if (asm.GetName().Name == "MDD4All.DME.Proxies")
                     {
-                        return InvokeJson(asm, obj);
+                        return InvokeJson(asm, obj, includeTypeInformation);
                     }
                 }
             }
@@ -74,7 +74,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             return result;
         }
 
-        private static string InvokeJson(Assembly helperAssembly, object obj)
+        private static string InvokeJson(Assembly helperAssembly, object obj, bool includeTypeInformation)
         {
             string result = "";
 
@@ -86,7 +86,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 object? proxy = Activator.CreateInstance(proxyType);
                 if (method != null)
                 {
-                    string? json = (string?)method.Invoke(proxy, new[] { obj });
+                    string? json = (string?)method.Invoke(proxy, new object[] { obj, includeTypeInformation });
                     if (json != null)
                     {
                         result = json;
