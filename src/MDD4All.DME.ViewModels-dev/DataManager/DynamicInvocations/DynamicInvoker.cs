@@ -51,6 +51,46 @@ namespace MDD4All.DME.ViewModels.DataManager
             throw new Exception("Helper.dll nicht im gleichen AssemblyLoadContext geladen.");
         }
 
+        // Takes the target type instead of an object, because when deserializing there is no
+        // instance yet - the type is what tells us which load context the proxy has to run in.
+        public static object? DeserializeJson(string json, Type targetType)
+        {
+            Assembly assembly = targetType.Assembly;
+
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(assembly);
+
+            if (alc != null)
+            {
+                foreach (Assembly asm in alc.Assemblies)
+                {
+                    if (asm.GetName().Name == "MDD4All.DME.Proxies")
+                    {
+                        return InvokeJsonDeserialize(asm, json, targetType);
+                    }
+                }
+            }
+            throw new Exception("Helper.dll nicht im gleichen AssemblyLoadContext geladen.");
+        }
+
+        private static object? InvokeJsonDeserialize(Assembly helperAssembly, string json, Type targetType)
+        {
+            object? result = null;
+
+            Type? proxyType = helperAssembly.GetType("MDD4All.DME.Proxies.JsonSerializerProxy");
+            if (proxyType != null)
+            {
+                MethodInfo? method = proxyType.GetMethod("Deserialize");
+
+                object? proxy = Activator.CreateInstance(proxyType);
+                if (method != null)
+                {
+                    result = method.Invoke(proxy, new object[] { json, targetType });
+                }
+            }
+
+            return result;
+        }
+
         private static string InvokeXml(Assembly helperAssembly, object obj)
         {
             string result = "";

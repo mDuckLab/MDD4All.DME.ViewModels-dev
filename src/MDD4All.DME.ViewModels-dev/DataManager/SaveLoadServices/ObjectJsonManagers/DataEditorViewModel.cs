@@ -166,7 +166,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 {
                     string json = File.ReadAllText(FileName);
 
-                    object? deserializedJson = JsonConvert.DeserializeObject(json, SelectedType, SerializerSettings);
+                    object? deserializedJson = DynamicInvoker.DeserializeJson(json, SelectedType!);
 
                     if (deserializedJson != null)
                     {
