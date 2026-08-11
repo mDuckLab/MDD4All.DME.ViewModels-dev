@@ -5,6 +5,7 @@ using MDD4All.DME.AssemblyTree.ViewModels;
 using MDD4All.DME.Configurations;
 using MDD4All.FileAccess.Contracts;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Input;
 
@@ -86,9 +87,7 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             if (descriptor != null)
             {
-                _dataManagerSettings.CurrentDataModel = descriptor;
-
-                _dataManagerSettings.SetTopRecentDataModel(descriptor);
+                this.ActivateDataModel(descriptor);
 
                 FileInfo fileInfo = new FileInfo(descriptor.DllPath);
 
@@ -107,9 +106,75 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             DataModelDescriptor descriptor = _dataManagerSettings.RecentDataModels[index];
 
+            this.ActivateDataModel(descriptor);
+        }
+        #endregion
+
+        #region Helpers
+        // Makes the given model the current one. Everything that opens a file ends up here,
+        // so the model only ever changes in one place.
+        public void ActivateDataModel(DataModelDescriptor descriptor)
+        {
             _dataManagerSettings.CurrentDataModel = descriptor;
 
             _dataManagerSettings.SetTopRecentDataModel(descriptor);
+        }
+
+        // The DLL is picked at runtime, so a stored descriptor only becomes a usable type
+        // by going through the assembly provider.
+        public Type? ResolveDataModelType(DataModelDescriptor descriptor)
+        {
+            Assembly assembly = _assemblyProvider.GetAssemblyByPath(descriptor.DllPath);
+
+            return assembly.GetType(descriptor.FullTypeName);
+        }
+
+        // A saved file names its own type assembly-qualified ("Namespace.Type, AssemblyName"), so the
+        // model it belongs to can be derived from the file instead of having to be picked beforehand.
+        public DataModelDescriptor? FindDataModelForFile(string filePath)
+        {
+            DataModelDescriptor? result = null;
+
+            if (filePath.ToLower().EndsWith("json"))
+            {
+                string? qualifiedTypeName = DataEditorViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
+
+                if (qualifiedTypeName != null)
+                {
+                    string[] typeNameParts = qualifiedTypeName.Split(',');
+
+                    string typeName = typeNameParts[0].Trim();
+
+                    if (typeNameParts.Length > 1)
+                    {
+                        // Data model DLLs referenced by the application end up next to it.
+                        string assemblyName = typeNameParts[1].Trim();
+                        string dllPath = Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll");
+
+                        if (File.Exists(dllPath))
+                        {
+                            result = new DataModelDescriptor
+                            {
+                                DllPath = dllPath,
+                                FullTypeName = typeName
+                            };
+                        }
+                    }
+
+                    // Not next to the application, so it can only be a model loaded from elsewhere -
+                    // keep that DLL and take just the type the file actually names.
+                    if (result == null && _dataManagerSettings.CurrentDataModel != null)
+                    {
+                        result = new DataModelDescriptor
+                        {
+                            DllPath = _dataManagerSettings.CurrentDataModel.DllPath,
+                            FullTypeName = typeName
+                        };
+                    }
+                }
+            }
+
+            return result;
         }
         #endregion
     }

@@ -1,12 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MDD4All.AssemblyLoading.Contracts;
 using MDD4All.DME.Configurations;
 using MDD4All.FileAccess.Contracts;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Windows.Input;
 using System.Xml.Serialization;
@@ -18,13 +16,13 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region constructor
         public DataManagerFileViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
-                                        IAssemblyProvider assemblyProvider,
-                                        DataManagerSettingsViewModel dataManagerSettings)
+                                        DataManagerSettingsViewModel dataManagerSettings,
+                                        DataManagerModelViewModel dataManagerModel)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
-            _assemblyProvider = assemblyProvider;
             _dataManagerSettings = dataManagerSettings;
+            _dataManagerModel = dataManagerModel;
 
             this.InitializeCommands();
         }
@@ -44,10 +42,11 @@ namespace MDD4All.DME.ViewModels.DataManager
         private readonly IFileLoader _fileLoader;
         private readonly IFileSaver _fileSaver;
 
-        // Needed because the data model is a DLL picked by the user at runtime, not known at compile time.
-        private readonly IAssemblyProvider _assemblyProvider;
-
         private readonly DataManagerSettingsViewModel _dataManagerSettings;
+
+        // Asked for the type behind a stored descriptor and for switching the active model,
+        // so that stays in one place instead of being repeated per file command.
+        private readonly DataManagerModelViewModel _dataManagerModel;
 
         private DataEditorViewModel? _dataEditorViewModel;
 
@@ -136,9 +135,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     if (currentType != null)
                     {
-                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(currentType.DllPath);
-
-                        Type? type = assembly.GetType(currentType.FullTypeName);
+                        Type? type = _dataManagerModel.ResolveDataModelType(currentType);
 
                         if (type != null)
                         {
@@ -172,16 +169,13 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (descriptor != null)
             {
-                Assembly assembly = _assemblyProvider.GetAssemblyByPath(descriptor.DataModelDescription.DllPath);
-
-                Type? type = assembly.GetType(descriptor.DataModelDescription.FullTypeName);
+                Type? type = _dataManagerModel.ResolveDataModelType(descriptor.DataModelDescription);
 
                 if (type != null)
                 {
                     _dataManagerSettings.SetRecentDataFileToTop(index);
-                    _dataManagerSettings.CurrentDataModel = descriptor.DataModelDescription;
 
-                    _dataManagerSettings.SetTopRecentDataModel(descriptor.DataModelDescription);
+                    _dataManagerModel.ActivateDataModel(descriptor.DataModelDescription);
 
                     this.DataEditorViewModel = new DataEditorViewModel(descriptor.FilePath, type, _fileSaver);
 
@@ -205,7 +199,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 {
                     // The file names the type it was saved as, so its model is looked up from the
                     // file itself - only if that fails does the currently selected one apply.
-                    DataModelDescriptor? descriptor = this.FindDataModelForFile(filename);
+                    DataModelDescriptor? descriptor = _dataManagerModel.FindDataModelForFile(filename);
 
                     if (descriptor == null)
                     {
@@ -214,14 +208,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     if (descriptor != null)
                     {
-                        Assembly assembly = _assemblyProvider.GetAssemblyByPath(descriptor.DllPath);
-
-                        Type? type = assembly.GetType(descriptor.FullTypeName);
+                        Type? type = _dataManagerModel.ResolveDataModelType(descriptor);
 
                         if (type != null)
                         {
-                            _dataManagerSettings.CurrentDataModel = descriptor;
-                            _dataManagerSettings.SetTopRecentDataModel(descriptor);
+                            _dataManagerModel.ActivateDataModel(descriptor);
 
                             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
                             {
@@ -317,54 +308,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Helpers
-        // A saved file names its own type assembly-qualified ("Namespace.Type, AssemblyName"), so the
-        // model it belongs to can be derived from the file instead of having to be picked beforehand.
-        private DataModelDescriptor? FindDataModelForFile(string filePath)
-        {
-            DataModelDescriptor? result = null;
-
-            if (filePath.ToLower().EndsWith("json"))
-            {
-                string? qualifiedTypeName = DataEditorViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
-
-                if (qualifiedTypeName != null)
-                {
-                    string[] typeNameParts = qualifiedTypeName.Split(',');
-
-                    string typeName = typeNameParts[0].Trim();
-
-                    if (typeNameParts.Length > 1)
-                    {
-                        // Data model DLLs referenced by the application end up next to it.
-                        string assemblyName = typeNameParts[1].Trim();
-                        string dllPath = Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll");
-
-                        if (File.Exists(dllPath))
-                        {
-                            result = new DataModelDescriptor
-                            {
-                                DllPath = dllPath,
-                                FullTypeName = typeName
-                            };
-                        }
-                    }
-
-                    // Not next to the application, so it can only be a model loaded from elsewhere -
-                    // keep that DLL and take just the type the file actually names.
-                    if (result == null && _dataManagerSettings.CurrentDataModel != null)
-                    {
-                        result = new DataModelDescriptor
-                        {
-                            DllPath = _dataManagerSettings.CurrentDataModel.DllPath,
-                            FullTypeName = typeName
-                        };
-                    }
-                }
-            }
-
-            return result;
-        }
-
         private void SerializeToXml()
         {
 
