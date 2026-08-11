@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MDD4All.AssemblyLoading.Contracts;
-using MDD4All.DME.AssemblyTree.ViewModels;
 using MDD4All.DME.Configurations;
 using MDD4All.FileAccess.Contracts;
 using System;
@@ -20,15 +19,12 @@ namespace MDD4All.DME.ViewModels.DataManager
         public DataManagerFileViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
                                         IAssemblyProvider assemblyProvider,
-                                        DataManagerSettingsViewModel dataManagerSettings,
-                                        DataManagerModelViewModel dataManagerModel)
+                                        DataManagerSettingsViewModel dataManagerSettings)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
             _assemblyProvider = assemblyProvider;
             _dataManagerSettings = dataManagerSettings;
-            _dataManagerModel = dataManagerModel;
-            _dataManagerModel.PropertyChanged += this.OnDataManagerModelPropertyChanged;
 
             this.InitializeCommands();
         }
@@ -52,8 +48,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         private readonly IAssemblyProvider _assemblyProvider;
 
         private readonly DataManagerSettingsViewModel _dataManagerSettings;
-
-        private readonly DataManagerModelViewModel _dataManagerModel;
 
         private DataEditorViewModel? _dataEditorViewModel;
 
@@ -93,21 +87,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        public DmeConfiguration Configuration
-        {
-            get
-            {
-                return _dataManagerSettings.Configuration;
-            }
-        }
-
-        public AssemblyTreeViewModel? AssemblyTreeViewModel
-        {
-            get
-            {
-                return _dataManagerModel.AssemblyTreeViewModel;
-            }
-        }
         #endregion
 
         #region Event Handlers
@@ -122,43 +101,9 @@ namespace MDD4All.DME.ViewModels.DataManager
                 this.OnPropertyChanged(nameof(DataEditorViewModel));
             }
         }
-
-        // Forwards the sub-viewmodel's own notification so MainViewModel (which watches
-        // this class, not DataManagerModelViewModel) still finds out about the change.
-        private void OnDataManagerModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(DataManagerModelViewModel.AssemblyTreeViewModel))
-            {
-                this.OnPropertyChanged(nameof(AssemblyTreeViewModel));
-            }
-        }
         #endregion
 
         #region Commands
-        public ICommand OpenDataModelCommand
-        {
-            get
-            {
-                return _dataManagerModel.OpenDataModelCommand;
-            }
-        }
-
-        public ICommand ConfirmOpenDataModelCommand
-        {
-            get
-            {
-                return _dataManagerModel.ConfirmOpenDataModelCommand;
-            }
-        }
-
-        public ICommand SetDataModelFromRecentListCommand
-        {
-            get
-            {
-                return _dataManagerModel.SetDataModelFromRecentListCommand;
-            }
-        }
-
         public ICommand NewDataFileCommand { get; private set; } = null!;
 
         public ICommand OpenDataFileCommand { get; private set; } = null!;
