@@ -2,8 +2,6 @@
 using MDD4All.FileAccess.Contracts;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
 using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
@@ -103,25 +101,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         }
 
 
-        private bool _isNamespaceFilterActive = true;
-        public bool IsNamespaceFilterActive
-        {
-            get
-            {
-                return _isNamespaceFilterActive;
-            }
-            set
-            {
-                if (_isNamespaceFilterActive != value)
-                {
-                    _isNamespaceFilterActive = value;
-                    OnPropertyChanged(nameof(IsNamespaceFilterActive));
-                    // We also notify that the list of types might have changed
-                    OnPropertyChanged(nameof(GetAvailableDataModels));
-                }
-            }
-        }
-
         public JsonSerializerSettings SerializerSettings { get; private set; }
 
         public bool ShowXml { get; set; }
@@ -177,75 +156,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         }
 
 
-        public Type? FindTypeByFullName(string typeFullName)
-        {
-            // Example Input: "MDD4All.DME.DataModels.PersonsExamples.Person, MDD4All.DME"
-            Type? result = null;
-
-            if (!string.IsNullOrEmpty(typeFullName))
-            {
-                string cleanTypeName = typeFullName.Split(',')[0].Trim();
-                // Result: "MDD4All.DME.DataModels.PersonsExamples.Person"
-                // The assembly info ", MDD4All.DME" is removed to match the C# FullName.
-
-                // Search for the Person type in your available models
-                result = GetAvailableDataModels().FirstOrDefault(type => type.FullName == cleanTypeName);
-            }
-
-            return result;
-        }
-
-        public List<Type> GetAvailableDataModels()
-        {
-            List<Type> filteredTypes = new List<Type>();
-
-            // get all loaded assemblies from everywhere
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            foreach (Assembly assembly in assemblies)
-            {
-                try
-                {
-                    // skip system stuff for speed
-                    string? name = assembly.FullName;
-                    if (name != null && (name.StartsWith("Microsoft") || name.StartsWith("System")))
-                    {
-                        if (IsNamespaceFilterActive) continue;
-                    }
-
-                    foreach (Type type in assembly.GetTypes())
-                    {
-                        // need public class with empty constructor
-                        if (type.IsClass && type.IsPublic && !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) != null)
-                        {
-                            if (IsNamespaceFilterActive)
-                            {
-                                // filter by datamodels string
-                                if (type.Namespace != null && type.Namespace.Contains("DataModels"))
-                                {
-                                    filteredTypes.Add(type);
-                                }
-                            }
-                            else
-                            {
-                                // no microsoft or system here
-                                if (type.Namespace != null && !type.Namespace.StartsWith("Microsoft") && !type.Namespace.StartsWith("System"))
-                                {
-                                    filteredTypes.Add(type);
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (ReflectionTypeLoadException)
-                {
-                    // assembly broken? just skip
-                    continue;
-                }
-            }
-            // sorting
-            return filteredTypes.OrderBy(t => t.Name).ToList();
-        }
 
 
         public void LoadFromFile()
@@ -312,62 +222,5 @@ namespace MDD4All.DME.ViewModels.DataManager
             return result;
         }
 
-        public object? LoadFromContent(string jsonContent)
-        {
-            object? result = null;
-
-            if (!string.IsNullOrEmpty(jsonContent))
-            {
-                string? typeName = ReadTypeNameFromJson(jsonContent);
-
-                if (typeName != null)
-                {
-                    // Convert the type string into a real C# System.Type
-                    Type? type = FindTypeByFullName(typeName);
-
-                    if (type != null)
-                    {
-                        try
-                        {
-                            // Update the manager's selected type to match the imported data
-                            this.SelectedType = type;
-
-                            // Deserialize the JSON into the specific C# object instance
-                            result = JsonConvert.DeserializeObject(jsonContent, type, this.SerializerSettings);
-
-                            // Assign the result to ActiveObject to trigger a UI and tree refresh
-                            this.ActiveObject = result;
-                        }
-                        catch (Exception ex)
-                        {
-#if DEBUG
-                            Console.WriteLine(ex.Message);
-#endif
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-
-        public (string FileName, string Base64Data)? GetExportPackage()
-        {
-            (string FileName, string Base64Data)? result = null;
-
-            if (!string.IsNullOrEmpty(ActiveObjectJsonString) && SelectedType != null)
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(ActiveObjectJsonString);
-                string base64 = Convert.ToBase64String(bytes);
-                string name = SelectedType.Name + ".json";
-
-                result = (name, base64);
-            }
-            return result;
-        }
-
-
-        
-
-        
     }
 }
