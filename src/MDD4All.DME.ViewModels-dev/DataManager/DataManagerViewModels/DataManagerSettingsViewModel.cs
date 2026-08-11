@@ -164,12 +164,20 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         public void AddNewRecentDataFile(DataFileDescriptor dataFileDescriptor)
         {
-            if (_configuration.RecentDataFiles.Count == 5)
-            {
-                _configuration.RecentDataFiles.RemoveAt(4);
+            // Reopening a known file moves it back to the top instead of listing it twice.
+            DataFileDescriptor? existingDescriptor = _configuration.RecentDataFiles.Find(file => file.FilePath == dataFileDescriptor.FilePath);
 
-                _configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
+            if (existingDescriptor != null)
+            {
+                _configuration.RecentDataFiles.Remove(existingDescriptor);
             }
+
+            while (_configuration.RecentDataFiles.Count >= 5)
+            {
+                _configuration.RecentDataFiles.RemoveAt(_configuration.RecentDataFiles.Count - 1);
+            }
+
+            _configuration.RecentDataFiles.Insert(0, dataFileDescriptor);
 
             this.Persist();
         }
