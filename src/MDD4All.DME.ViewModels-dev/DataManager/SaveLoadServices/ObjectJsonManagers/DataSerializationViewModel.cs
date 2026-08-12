@@ -6,10 +6,8 @@ namespace MDD4All.DME.ViewModels.DataManager
 {
     public class DataSerializationViewModel : ObservableObject
     {
-        public DataSerializationViewModel(string fileName,
-                                         Type dataModelRootType)
+        public DataSerializationViewModel(Type dataModelRootType)
         {
-            _fileName = fileName;
             _selectedType = dataModelRootType;
         }
 
@@ -49,21 +47,6 @@ namespace MDD4All.DME.ViewModels.DataManager
                 }
             }
         }
-
-        private string _fileName = "";
-
-        public string FileName
-        {
-            get 
-            { 
-                return _fileName; 
-            }
-            set
-            { 
-                _fileName = value; 
-            }
-        }
-
 
         public bool ShowXml { get; set; }
 
@@ -120,42 +103,26 @@ namespace MDD4All.DME.ViewModels.DataManager
 
 
 
-        public void LoadFromFile()
+        // Counterpart to ActiveObjectJsonString - takes content, never a path, so reading
+        // the file and parsing it stay separate concerns.
+        public void LoadFromJson(string json)
         {
-            if (FileName.ToLower().EndsWith("json"))
+            object? deserializedJson = DynamicInvoker.DeserializeJson(json, SelectedType!);
+
+            if (deserializedJson != null)
             {
-                try
-                {
-                    string json = File.ReadAllText(FileName);
-
-                    object? deserializedJson = DynamicInvoker.DeserializeJson(json, SelectedType!);
-
-                    if (deserializedJson != null)
-                    {
-                        ActiveObject = deserializedJson;
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine(exception);
-                }
+                ActiveObject = deserializedJson;
             }
-            else if(FileName.ToLower().EndsWith("xml"))
+        }
+
+        // Counterpart to ActiveObjectXmlString.
+        public void LoadFromXml(string xml)
+        {
+            XmlSerializer xmlSerializer = new XmlSerializer(SelectedType!);
+
+            using (StringReader stringReader = new StringReader(xml))
             {
-                try
-                {
-                    XmlSerializer xmlSerializer = new XmlSerializer(SelectedType);
-                    
-                    FileStream fileStream = new FileStream(FileName, FileMode.Open);
-                    // Call the Deserialize method and cast to the object type.
-                    ActiveObject = xmlSerializer.Deserialize(fileStream);
-                    fileStream.Flush();
-                    fileStream.Close();
-                }
-                catch(Exception exception)
-                {
-                    Console.WriteLine(exception);
-                }
+                ActiveObject = xmlSerializer.Deserialize(stringReader);
             }
         }
 

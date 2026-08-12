@@ -72,6 +72,9 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
+        // The path lives here, not in the serialization view model - that one only ever sees content.
+        public string CurrentFilePath { get; private set; } = "";
+
         public string StatusText
         {
             get
@@ -79,7 +82,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 string result = "";
                 if (this.DataSerializationViewModel != null)
                 {
-                    result = "Filename: " + this.DataSerializationViewModel.FileName;
+                    result = "Filename: " + this.CurrentFilePath;
                     result += " ● Data Model: " + _dataManagerSettings.CurrentDataModel!.FullTypeName;
                 }
                 return result;
@@ -139,7 +142,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                         if (type != null)
                         {
-                            this.DataSerializationViewModel = new DataSerializationViewModel(fileName, type);
+                            this.CurrentFilePath = fileName;
+
+                            this.DataSerializationViewModel = new DataSerializationViewModel(type);
 
                             this.DataSerializationViewModel.CreateNewInstance();
 
@@ -177,9 +182,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     _dataManagerModel.ActivateDataModel(descriptor.DataModelDescription);
 
-                    this.DataSerializationViewModel = new DataSerializationViewModel(descriptor.FilePath, type);
-
-                    this.DataSerializationViewModel.LoadFromFile();
+                    this.LoadDataFile(descriptor.FilePath, type);
                 }
             }
         }
@@ -222,9 +225,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                             _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
-                            this.DataSerializationViewModel = new DataSerializationViewModel(filename, type);
-
-                            this.DataSerializationViewModel.LoadFromFile();
+                            this.LoadDataFile(filename, type);
                         }
                     }
                 }
@@ -238,7 +239,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteSaveDataFile()
         {
-            FileInfo fileInfo = new FileInfo(this.DataSerializationViewModel!.FileName);
+            FileInfo fileInfo = new FileInfo(this.CurrentFilePath);
 
             if (fileInfo.DirectoryName != null)
             {
@@ -246,7 +247,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
 
             // Read at save time, so toggling the setting takes effect without reopening the file.
-            this.DataSerializationViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
+            this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
             if (fileInfo.Extension.ToLower() == ".xml")
             {
@@ -254,7 +255,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
             else
             {
-                File.WriteAllText(this.DataSerializationViewModel!.FileName, this.DataSerializationViewModel.ActiveObjectJsonString);
+                File.WriteAllText(this.CurrentFilePath, this.DataSerializationViewModel.ActiveObjectJsonString);
             }
         }
 
@@ -273,10 +274,10 @@ namespace MDD4All.DME.ViewModels.DataManager
                 {
                     FileInfo fileInfo = new FileInfo(fileName);
 
-                    this.DataSerializationViewModel!.FileName = fileName;
+                    this.CurrentFilePath = fileName;
 
                     // Read at save time, so toggling the setting takes effect without reopening the file.
-                    this.DataSerializationViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
+                    this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
                     if (fileInfo.Extension.ToLower() == ".xml")
                     {
@@ -308,14 +309,38 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Helpers
+        // Reading the file happens here so the serialization view model only ever gets content.
+        // That also keeps file errors and parse errors apart instead of collapsing them into one catch.
+        private void LoadDataFile(string filePath, Type dataModelRootType)
+        {
+            this.CurrentFilePath = filePath;
+
+            this.DataSerializationViewModel = new DataSerializationViewModel(dataModelRootType);
+
+            try
+            {
+                string content = File.ReadAllText(filePath);
+
+                if (filePath.ToLower().EndsWith("xml"))
+                {
+                    this.DataSerializationViewModel.LoadFromXml(content);
+                }
+                else
+                {
+                    this.DataSerializationViewModel.LoadFromJson(content);
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+        }
+
         private void SerializeToXml()
         {
+            XmlSerializer mySerializer = new XmlSerializer(this.DataSerializationViewModel!.SelectedType!);
 
-            // Insert code to set properties and fields of the object.
-            XmlSerializer mySerializer = new
-            XmlSerializer(this.DataSerializationViewModel!.SelectedType!);
-            // To write to a file, create a StreamWriter object.
-            StreamWriter myWriter = new StreamWriter(this.DataSerializationViewModel.FileName);
+            StreamWriter myWriter = new StreamWriter(this.CurrentFilePath);
             mySerializer.Serialize(myWriter, this.DataSerializationViewModel.ActiveObject);
             myWriter.Close();
         }
