@@ -6,6 +6,9 @@ using System.Collections.Generic;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
+    /// <summary>
+    /// Owns the DME configuration file - every setter persists immediately so a change can never be lost.
+    /// </summary>
     public class DataManagerSettingsViewModel : ObservableObject
     {
         #region constructor
@@ -15,6 +18,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             _configuration = _configurationReaderWriter.GetConfiguration();
 
+            // No config file yet on first run - fall back to defaults instead of failing.
             if (_configuration == null)
             {
                 _configuration = new DmeConfiguration();
@@ -110,11 +114,13 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Helpers
+        // Called by every setter above, so a change can never be forgotten to save.
         private void Persist()
         {
             _configurationReaderWriter.StoreConfiguration(_configuration);
         }
 
+        // Moves a known model to the top of the recent list, or inserts a new one capped at 5 entries.
         public void SetTopRecentDataModel(DataModelDescriptor modelDescriptor)
         {
             if (_configuration.RecentDataModels.Find(dm => dm.DllPath == modelDescriptor.DllPath &&

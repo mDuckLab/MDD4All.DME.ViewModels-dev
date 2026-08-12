@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -12,12 +12,12 @@ namespace MDD4All.DME.ViewModels.DataManager
             Type type = obj.GetType();
             Assembly assembly = type.Assembly;
 
-            // richtigen LoadContext holen
+            // The proxy has to run inside the object's own AssemblyLoadContext, otherwise
+            // its type resolution would not match the object's actual type identity.
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(assembly);
 
             if (alc != null)
             {
-                // Helper-Assembly laden (falls noch nicht geladen)
                 foreach (Assembly asm in alc.Assemblies)
                 {
                     if (asm.GetName().Name == "MDD4All.DME.Proxies")
@@ -34,12 +34,10 @@ namespace MDD4All.DME.ViewModels.DataManager
             Type type = obj.GetType();
             Assembly assembly = type.Assembly;
 
-            // richtigen LoadContext holen
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(assembly);
 
             if (alc != null)
             {
-                // Helper-Assembly laden (falls noch nicht geladen)
                 foreach (Assembly asm in alc.Assemblies)
                 {
                     if (asm.GetName().Name == "MDD4All.DME.Proxies")
@@ -94,7 +92,7 @@ namespace MDD4All.DME.ViewModels.DataManager
         private static string InvokeXml(Assembly helperAssembly, object obj)
         {
             string result = "";
-            
+
             Type? proxyType = helperAssembly.GetType("MDD4All.DME.Proxies.XmlSerializerProxy");
             if (proxyType != null)
             {
