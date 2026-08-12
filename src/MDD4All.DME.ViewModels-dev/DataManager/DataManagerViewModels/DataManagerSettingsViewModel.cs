@@ -31,7 +31,6 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private DmeConfiguration _configuration;
 
-        // Read-only outward - all mutation goes through the properties/methods below so persistence can't be forgotten.
         public DmeConfiguration Configuration
         {
             get
