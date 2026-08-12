@@ -139,7 +139,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                         if (type != null)
                         {
-                            this.DataSerializationViewModel = new DataSerializationViewModel(fileName, type, _fileSaver);
+                            this.DataSerializationViewModel = new DataSerializationViewModel(fileName, type);
 
                             this.DataSerializationViewModel.CreateNewInstance();
 
@@ -177,7 +177,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     _dataManagerModel.ActivateDataModel(descriptor.DataModelDescription);
 
-                    this.DataSerializationViewModel = new DataSerializationViewModel(descriptor.FilePath, type, _fileSaver);
+                    this.DataSerializationViewModel = new DataSerializationViewModel(descriptor.FilePath, type);
 
                     this.DataSerializationViewModel.LoadFromFile();
                 }
@@ -222,7 +222,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                             _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
-                            this.DataSerializationViewModel = new DataSerializationViewModel(filename, type, _fileSaver);
+                            this.DataSerializationViewModel = new DataSerializationViewModel(filename, type);
 
                             this.DataSerializationViewModel.LoadFromFile();
                         }

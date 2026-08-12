@@ -1,6 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using MDD4All.FileAccess.Contracts;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Xml.Serialization;
 
@@ -8,51 +6,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 {
     public class DataSerializationViewModel : ObservableObject
     {
-        private IFileSaver _fileSaver;
-
         public DataSerializationViewModel(string fileName,
-                                   Type dataModelRootType,
-                                   IFileSaver fileSaver)
+                                         Type dataModelRootType)
         {
             _fileName = fileName;
             _selectedType = dataModelRootType;
-            _fileSaver = fileSaver;
-
-            SerializerSettings = new JsonSerializerSettings
-            {
-                // Includes the full C# type name in the JSON (as $type). 
-                // This is vital for deserializing inherited classes correctly.
-                TypeNameHandling = TypeNameHandling.Auto,
-                // Forces the reader to look for metadata (like $type or $id) at the beginning.
-                //MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
-                //// Ensures that the same object isn't saved twice; instead, it uses references ($id/$ref).
-                //PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-                //// Prevents the serializer from crashing if objects point to each other in a circle.
-                //ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                // Explicitly writes 'null' into the JSON file instead of skipping the property.
-                // Also needed on the way back in: without an explicit "Property": null in the
-                // file, deserialization leaves whatever the target type's constructor already
-                // set (e.g. PersonRepository's constructor seeds PersonArray with test data),
-                // so a deleted/nulled property would silently reappear after reload.
-                NullValueHandling = NullValueHandling.Include,
-                // Ensures a "fresh start" by replacing existing collections and objects instead of 
-                // appending new data to them. This prevents data pollution and duplicate entries.
-                // Example: If a list currently has 3 items and you load a file containing 2 items, 
-                // 'Replace' ensures the list has exactly 2 items. Without this, the list would 
-                // incorrectly grow to 5 items due to default 'Append' behavior.
-                ObjectCreationHandling = ObjectCreationHandling.Replace,
-                //// Allows the use of private or internal constructors when creating objects from JSON.
-                //ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                //// Uses a simplified assembly name in the $type metadata for better compatibility.
-                //TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
-                // Formats the resulting JSON string with indentation and line breaks for human readability.
-                Formatting = Formatting.Indented,
-                // Adds a custom converter to handle Dictionary structures correctly during conversion.
-                // This converter handles the transformation of IDictionary objects.
-                // It solves the problem that standard JSON only allows strings as keys, 
-                // whereas C# dictionaries can use complex objects as keys.
-                //Converters = new List<JsonConverter> { new DictionaryJsonConverter() }
-            };
         }
 
 
@@ -106,8 +64,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-
-        public JsonSerializerSettings SerializerSettings { get; private set; }
 
         public bool ShowXml { get; set; }
 
