@@ -80,7 +80,7 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region Event Handlers
         private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataManagerFileViewModel.DataEditorViewModel))
+            if (e.PropertyName == nameof(DataManagerFileViewModel.DataSerializationViewModel))
             {
                 RebuildTree();
             }
@@ -93,8 +93,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 this.TreeViewModel.PropertyChanged -= this.OnTreePropertyChanged;
             }
 
-            object? activeObject = _dataFileManager.DataEditorViewModel?.ActiveObject;
-            Type? selectedType = _dataFileManager.DataEditorViewModel?.SelectedType;
+            object? activeObject = _dataFileManager.DataSerializationViewModel?.ActiveObject;
+            Type? selectedType = _dataFileManager.DataSerializationViewModel?.SelectedType;
 
             if (activeObject != null || selectedType != null)
             {

@@ -48,26 +48,26 @@ namespace MDD4All.DME.ViewModels.DataManager
         // so that stays in one place instead of being repeated per file command.
         private readonly DataManagerModelViewModel _dataManagerModel;
 
-        private DataEditorViewModel? _dataEditorViewModel;
+        private DataSerializationViewModel? _dataSerializationViewModel;
 
-        public DataEditorViewModel? DataEditorViewModel
+        public DataSerializationViewModel? DataSerializationViewModel
         {
             get
             {
-                return _dataEditorViewModel;
+                return _dataSerializationViewModel;
             }
             private set
             {
-                if (_dataEditorViewModel != null)
+                if (_dataSerializationViewModel != null)
                 {
-                    _dataEditorViewModel.PropertyChanged -= this.OnActiveDataEditorPropertyChanged;
+                    _dataSerializationViewModel.PropertyChanged -= this.OnDataSerializationPropertyChanged;
                 }
 
-                _dataEditorViewModel = value;
+                _dataSerializationViewModel = value;
 
-                if (_dataEditorViewModel != null)
+                if (_dataSerializationViewModel != null)
                 {
-                    _dataEditorViewModel.PropertyChanged += this.OnActiveDataEditorPropertyChanged;
+                    _dataSerializationViewModel.PropertyChanged += this.OnDataSerializationPropertyChanged;
                 }
             }
         }
@@ -77,9 +77,9 @@ namespace MDD4All.DME.ViewModels.DataManager
             get
             {
                 string result = "";
-                if (this.DataEditorViewModel != null)
+                if (this.DataSerializationViewModel != null)
                 {
-                    result = "Filename: " + this.DataEditorViewModel.FileName;
+                    result = "Filename: " + this.DataSerializationViewModel.FileName;
                     result += " ● Data Model: " + _dataManagerSettings.CurrentDataModel!.FullTypeName;
                 }
                 return result;
@@ -89,15 +89,15 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Event Handlers
-        // A freshly assigned DataEditorViewModel starts out empty - LoadFromFile()/
+        // A freshly assigned DataSerializationViewModel starts out empty - LoadFromFile()/
         // CreateNewInstance() populate ActiveObject a moment later. Notifying our own
         // subscribers (MainViewModel's tree rebuild) right here would rebuild the tree
         // from the still-empty object, so wait for ActiveObject itself to change instead.
-        private void OnActiveDataEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void OnDataSerializationPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataEditorViewModel.ActiveObject))
+            if (e.PropertyName == nameof(DataSerializationViewModel.ActiveObject))
             {
-                this.OnPropertyChanged(nameof(DataEditorViewModel));
+                this.OnPropertyChanged(nameof(DataSerializationViewModel));
             }
         }
         #endregion
@@ -139,9 +139,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                         if (type != null)
                         {
-                            this.DataEditorViewModel = new DataEditorViewModel(fileName, type, _fileSaver);
+                            this.DataSerializationViewModel = new DataSerializationViewModel(fileName, type, _fileSaver);
 
-                            this.DataEditorViewModel.CreateNewInstance();
+                            this.DataSerializationViewModel.CreateNewInstance();
 
                             this.SaveDataFileCommand.Execute(null);
 
@@ -177,9 +177,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     _dataManagerModel.ActivateDataModel(descriptor.DataModelDescription);
 
-                    this.DataEditorViewModel = new DataEditorViewModel(descriptor.FilePath, type, _fileSaver);
+                    this.DataSerializationViewModel = new DataSerializationViewModel(descriptor.FilePath, type, _fileSaver);
 
-                    this.DataEditorViewModel.LoadFromFile();
+                    this.DataSerializationViewModel.LoadFromFile();
                 }
             }
         }
@@ -222,9 +222,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                             _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
-                            this.DataEditorViewModel = new DataEditorViewModel(filename, type, _fileSaver);
+                            this.DataSerializationViewModel = new DataSerializationViewModel(filename, type, _fileSaver);
 
-                            this.DataEditorViewModel.LoadFromFile();
+                            this.DataSerializationViewModel.LoadFromFile();
                         }
                     }
                 }
@@ -238,7 +238,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteSaveDataFile()
         {
-            FileInfo fileInfo = new FileInfo(this.DataEditorViewModel!.FileName);
+            FileInfo fileInfo = new FileInfo(this.DataSerializationViewModel!.FileName);
 
             if (fileInfo.DirectoryName != null)
             {
@@ -246,7 +246,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
 
             // Read at save time, so toggling the setting takes effect without reopening the file.
-            this.DataEditorViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
+            this.DataSerializationViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
             if (fileInfo.Extension.ToLower() == ".xml")
             {
@@ -254,7 +254,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
             else
             {
-                File.WriteAllText(this.DataEditorViewModel!.FileName, this.DataEditorViewModel.ActiveObjectJsonString);
+                File.WriteAllText(this.DataSerializationViewModel!.FileName, this.DataSerializationViewModel.ActiveObjectJsonString);
             }
         }
 
@@ -273,10 +273,10 @@ namespace MDD4All.DME.ViewModels.DataManager
                 {
                     FileInfo fileInfo = new FileInfo(fileName);
 
-                    this.DataEditorViewModel!.FileName = fileName;
+                    this.DataSerializationViewModel!.FileName = fileName;
 
                     // Read at save time, so toggling the setting takes effect without reopening the file.
-                    this.DataEditorViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
+                    this.DataSerializationViewModel.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
 
                     if (fileInfo.Extension.ToLower() == ".xml")
                     {
@@ -284,7 +284,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                     }
                     else
                     {
-                        File.WriteAllText(fileName, this.DataEditorViewModel.ActiveObjectJsonString);
+                        File.WriteAllText(fileName, this.DataSerializationViewModel.ActiveObjectJsonString);
                     }
 
                     DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
@@ -313,10 +313,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             // Insert code to set properties and fields of the object.
             XmlSerializer mySerializer = new
-            XmlSerializer(this.DataEditorViewModel!.SelectedType!);
+            XmlSerializer(this.DataSerializationViewModel!.SelectedType!);
             // To write to a file, create a StreamWriter object.
-            StreamWriter myWriter = new StreamWriter(this.DataEditorViewModel.FileName);
-            mySerializer.Serialize(myWriter, this.DataEditorViewModel.ActiveObject);
+            StreamWriter myWriter = new StreamWriter(this.DataSerializationViewModel.FileName);
+            mySerializer.Serialize(myWriter, this.DataSerializationViewModel.ActiveObject);
             myWriter.Close();
         }
         #endregion

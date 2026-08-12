@@ -137,7 +137,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (filePath.ToLower().EndsWith("json"))
             {
-                string? qualifiedTypeName = DataEditorViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
+                string? qualifiedTypeName = DataSerializationViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
 
                 if (qualifiedTypeName != null)
                 {

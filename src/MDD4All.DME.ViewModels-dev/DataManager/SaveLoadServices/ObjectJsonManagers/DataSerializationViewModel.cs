@@ -6,11 +6,11 @@ using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public class DataEditorViewModel : ObservableObject
+    public class DataSerializationViewModel : ObservableObject
     {
         private IFileSaver _fileSaver;
 
-        public DataEditorViewModel(string fileName,
+        public DataSerializationViewModel(string fileName,
                                    Type dataModelRootType,
                                    IFileSaver fileSaver)
         {
@@ -96,8 +96,14 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         public string FileName
         {
-            get { return _fileName; }
-            set { _fileName = value; }
+            get 
+            { 
+                return _fileName; 
+            }
+            set
+            { 
+                _fileName = value; 
+            }
         }
 
 

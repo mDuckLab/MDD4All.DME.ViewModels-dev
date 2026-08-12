@@ -90,7 +90,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataManagerFileViewModel.DataEditorViewModel))
+            if (e.PropertyName == nameof(DataManagerFileViewModel.DataSerializationViewModel))
             {
                 ViewState = ViewState.ShowEditor;
             }
