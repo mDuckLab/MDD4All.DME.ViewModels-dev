@@ -106,11 +106,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        private void ReportLoadError(string message)
-        {
-            this.LoadErrorMessage = message;
-        }
-
         #endregion
 
         #region Event Handlers
@@ -228,8 +223,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 }
                 else
                 {
-                    this.ReportLoadError("Der Typ \"" + descriptor.DataModelDescription.FullTypeName
-                                         + "\" wurde in der Datenmodell-DLL nicht gefunden.");
+                    this.LoadErrorMessage = "Der Typ \"" + descriptor.DataModelDescription.FullTypeName
+                                            + "\" wurde in der Datenmodell-DLL nicht gefunden.";
                 }
             }
         }
@@ -250,16 +245,12 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (fileChosen)
                 {
-                    // A file only names its own type when it was saved with the type information
-                    // setting on. So this stays empty for older files, for files written with the
-                    // setting off, and for XML - which is not looked into at all. Only $type is
-                    // read here, the rest of the file is not parsed yet.
+                    // Stays empty unless the file was saved with the type information setting on.
                     DataModelDescriptor? descriptorFromFile = _dataManagerModel.FindDataModelForFile(filename);
 
                     bool typeFoundInFile = descriptorFromFile != null;
 
-                    // Two possible sources, and which one it was decides whether the result can be
-                    // trusted: what the file states is a fact, the current selection an assumption.
+                    // Which source it came from decides whether it can be trusted further down.
                     DataModelDescriptor? descriptor;
 
                     if (typeFoundInFile)
@@ -275,34 +266,27 @@ namespace MDD4All.DME.ViewModels.DataManager
                     {
                         // Neither source produced anything - a fresh installation where no data
                         // model was ever picked, opening a file that does not name one either.
-                        this.ReportLoadError("Es ist kein Datenmodell ausgewählt, und die Datei nennt selbst keines.");
+                        this.LoadErrorMessage = "Es ist kein Datenmodell ausgewählt, und die Datei nennt selbst keines.";
                     }
                     else
                     {
-                        // Same two strings to a real type as everywhere else, DLL loaded again.
                         Type? type = _dataManagerModel.ResolveDataModelType(descriptor);
 
                         if (type == null)
                         {
                             // The DLL is there but no longer holds that type - renamed or replaced.
-                            this.ReportLoadError("Der Typ \"" + descriptor.FullTypeName + "\" wurde in der Datenmodell-DLL nicht gefunden.");
+                            this.LoadErrorMessage = "Der Typ \"" + descriptor.FullTypeName + "\" wurde in der Datenmodell-DLL nicht gefunden.";
                         }
                         else
                         {
-                            // Reads the file and hands the content to the serialization view model.
-                            // Everything up to here was plain control flow - the context switch
-                            // happens inside, on the way through DynamicInvoker. The type is only
-                            // verified when the file did not state it, because only then is it an
-                            // assumption that could be wrong.
+                            // Verified only when the file did not state the type - then it is a guess.
                             bool loaded = this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
 
-                            // Both of these write to the configuration file, so they wait for the
-                            // load to succeed - otherwise a file that cannot be opened would still
-                            // switch the active model and take the top spot in the recent list.
+                            // Both write to the configuration file, so a file that would not open
+                            // must not switch the model or take the top spot in the recent list.
                             if (loaded)
                             {
-                                // The file decides which model is active, not the other way round -
-                                // so opening a file switches the editor over to its model.
+                                // The file decides which model is active, not the other way round.
                                 _dataManagerModel.ActivateDataModel(descriptor);
 
                                 DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
@@ -396,12 +380,8 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Helpers
-        // Reading the file happens here so the serialization view model only ever gets content.
-        // That also keeps file errors and parse errors apart instead of collapsing them into one catch.
-        // Nothing is handed over until the load succeeded: a failed attempt used to leave the path
-        // pointing at the new file while the object was empty, so the next save wrote over it.
-        // Reports whether the file was taken over, so the caller can hold back everything that
-        // should only happen for a file that actually opened.
+        // Hands nothing over until the load worked - a failed attempt used to leave the path
+        // pointing at a file that was never read, so the next save wrote over it.
         private bool LoadDataFile(string filePath, Type dataModelRootType, bool verifyRootType)
         {
             bool loaded = false;
@@ -416,74 +396,80 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
             catch (Exception exception)
             {
-                this.ReportLoadError("Die Datei konnte nicht gelesen werden.");
+                this.LoadErrorMessage = "Die Datei konnte nicht gelesen werden.";
                 Console.WriteLine(exception);
             }
 
             if (contentRead)
             {
-                bool isXml = filePath.ToLower().EndsWith("xml");
+                // Shown to nobody yet, so a failure below leaves the open file exactly as it was.
+                DataSerializationViewModel candidate = new DataSerializationViewModel(dataModelRootType);
 
-                // Only worth checking when the data model was guessed rather than read from the file.
-                if (verifyRootType && !isXml && !DataSerializationViewModel.RootPropertiesMatch(content, dataModelRootType))
+                LoadResult result;
+
+                // The format follows from the file name, which is this class's business. What to
+                // make of the content is not.
+                if (filePath.ToLower().EndsWith("xml"))
                 {
-                    this.ReportLoadError("Die Datei passt nicht zum gewählten Datenmodell \""
-                                         + dataModelRootType.Name
-                                         + "\". Sie enthält keine Typinformation, daher lässt sich das richtige Modell nicht bestimmen.");
+                    result = candidate.LoadFromXml(content);
                 }
                 else
                 {
-                    // Loaded aside first, so a failure leaves the currently open file untouched.
-                    DataSerializationViewModel candidate = new DataSerializationViewModel(dataModelRootType);
+                    result = candidate.LoadFromJson(content, verifyRootType);
+                }
 
-                    bool deserialized = false;
+                if (result == LoadResult.Loaded)
+                {
+                    this.LoadErrorMessage = "";
 
-                    try
-                    {
-                        if (isXml)
-                        {
-                            candidate.LoadFromXml(content);
-                        }
-                        else
-                        {
-                            candidate.LoadFromJson(content);
-                        }
+                    this.CurrentFilePath = filePath;
+                    this.DataSerializationViewModel = candidate;
 
-                        deserialized = true;
-                    }
-                    catch (Exception exception)
-                    {
-                        this.ReportLoadError("Die Datei konnte nicht gelesen werden - sie passt vermutlich nicht zum Datenmodell \""
-                                             + dataModelRootType.Name + "\".");
-                        Console.WriteLine(exception);
-                    }
+                    // The object was filled before anyone subscribed, so the usual notification
+                    // from the ActiveObject setter never fired - the editor is told here instead.
+                    this.OnPropertyChanged(nameof(DataSerializationViewModel));
+                    this.OnPropertyChanged(nameof(StatusText));
 
-                    if (deserialized)
-                    {
-                        if (candidate.ActiveObject == null)
-                        {
-                            this.ReportLoadError("Die Datei enthält kein verwertbares Objekt.");
-                        }
-                        else
-                        {
-                            this.LoadErrorMessage = "";
-
-                            this.CurrentFilePath = filePath;
-                            this.DataSerializationViewModel = candidate;
-
-                            // The object was filled before anyone subscribed, so the usual
-                            // notification from the ActiveObject setter never fired - the editor
-                            // is told about the new file here instead.
-                            this.OnPropertyChanged(nameof(DataSerializationViewModel));
-                            this.OnPropertyChanged(nameof(StatusText));
-
-                            loaded = true;
-                        }
-                    }
+                    loaded = true;
+                }
+                else
+                {
+                    this.LoadErrorMessage = this.DescribeLoadFailure(result, dataModelRootType);
                 }
             }
 
             return loaded;
+        }
+
+        // The serialization view model reports the cause and stays free of wording - phrasing it
+        // for the user belongs closer to the screen.
+        private string DescribeLoadFailure(LoadResult result, Type dataModelRootType)
+        {
+            string message;
+
+            switch (result)
+            {
+                case LoadResult.NotReadableAsJson:
+                    message = "Die Datei ist kein gültiges JSON.";
+                    break;
+
+                case LoadResult.DoesNotMatchType:
+                    message = "Die Datei passt nicht zum gewählten Datenmodell \""
+                              + dataModelRootType.Name
+                              + "\". Sie enthält keine Typinformation, daher lässt sich das richtige Modell nicht bestimmen.";
+                    break;
+
+                case LoadResult.NoObject:
+                    message = "Die Datei enthält kein verwertbares Objekt.";
+                    break;
+
+                default:
+                    message = "Die Datei konnte nicht gelesen werden - sie passt vermutlich nicht zum Datenmodell \""
+                              + dataModelRootType.Name + "\".";
+                    break;
+            }
+
+            return message;
         }
 
         private void SerializeToXml()
