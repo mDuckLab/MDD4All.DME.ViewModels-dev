@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
@@ -124,6 +125,50 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 ActiveObject = xmlSerializer.Deserialize(stringReader);
             }
+        }
+
+        // Checks whether a file plausibly belongs to the given type, for the case where the type was
+        // guessed rather than read from the file. Only the top level is compared, because that is
+        // where a file identifies itself - if the root does not match, nothing below it can either.
+        // Unknown names are rejected, missing ones are not, so a file written before a property was
+        // added still loads.
+        public static bool RootPropertiesMatch(string jsonContent, Type targetType)
+        {
+            bool result = true;
+
+            try
+            {
+                Newtonsoft.Json.Linq.JObject rawJson = Newtonsoft.Json.Linq.JObject.Parse(jsonContent);
+
+                List<string> knownNames = new List<string>();
+
+                foreach (PropertyInfo property in targetType.GetProperties())
+                {
+                    knownNames.Add(property.Name);
+                }
+
+                foreach (Newtonsoft.Json.Linq.JProperty jsonProperty in rawJson.Properties())
+                {
+                    // Written by Json.NET itself ($type, $id), not part of the type.
+                    if (jsonProperty.Name.StartsWith("$"))
+                    {
+                        continue;
+                    }
+
+                    if (!knownNames.Contains(jsonProperty.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                // Unreadable content is not this method's problem - deserializing will report it.
+                Console.WriteLine(exception);
+            }
+
+            return result;
         }
 
         // Reads only the $type metadata Json.NET wrote into the file, without deserializing the rest.
