@@ -44,6 +44,9 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 _viewState = value;
                 OnPropertyChanged(nameof(ViewState));
+
+                // A message about a file that would not open is stale as soon as another one did.
+                DismissNotification();
             }
         }
 
@@ -62,6 +65,56 @@ namespace MDD4All.DME.ViewModels.DataManager
                 _activeOverlay = value;
                 OnPropertyChanged(nameof(ActiveOverlay));
             }
+        }
+
+        // Sits below both the start page and the editor, so it can report things that happen
+        // before the editor is ever on screen - which the status bar cannot.
+        private string _notificationMessage = "";
+
+        public string NotificationMessage
+        {
+            get
+            {
+                return _notificationMessage;
+            }
+
+            private set
+            {
+                _notificationMessage = value;
+                OnPropertyChanged(nameof(NotificationMessage));
+            }
+        }
+
+        private NotificationSeverity _notificationSeverity = NotificationSeverity.Info;
+
+        public NotificationSeverity NotificationSeverity
+        {
+            get
+            {
+                return _notificationSeverity;
+            }
+
+            private set
+            {
+                _notificationSeverity = value;
+                OnPropertyChanged(nameof(NotificationSeverity));
+            }
+        }
+
+        #endregion
+
+        #region Notifications
+
+        public void ShowNotification(string message, NotificationSeverity severity)
+        {
+            NotificationSeverity = severity;
+            NotificationMessage = message;
+        }
+
+        // Called by the view once it has hidden the message, either on its own or by the user.
+        public void DismissNotification()
+        {
+            NotificationMessage = "";
         }
 
         #endregion
@@ -93,6 +146,18 @@ namespace MDD4All.DME.ViewModels.DataManager
             if (e.PropertyName == nameof(DataManagerFileViewModel.DataSerializationViewModel))
             {
                 ViewState = ViewState.ShowEditor;
+            }
+            else if (e.PropertyName == nameof(DataManagerFileViewModel.LoadErrorMessage))
+            {
+                if (_dataFileManager.LoadErrorMessage != "")
+                {
+                    ShowNotification(_dataFileManager.LoadErrorMessage, NotificationSeverity.Error);
+                }
+                else
+                {
+                    // Cleared after a load that worked, so the previous complaint can go.
+                    DismissNotification();
+                }
             }
         }
 
