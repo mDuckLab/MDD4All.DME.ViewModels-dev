@@ -1,5 +1,4 @@
 using MDD4All.Reflection;
-using System.Collections;
 using System.Reflection;
 
 namespace MDD4All.DME.ViewModels.DataManager
@@ -54,20 +53,17 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        // Same rule DictionaryJsonConverter applies while writing, so both sides call a key complex
-        // or neither does.
+        // Word for word what DictionaryJsonConverter.CanConvert asks, down to the same two calls,
+        // so a property is reported here exactly when the converter would take it.
         private bool IsDictionaryWithComplexKey(Type type)
         {
             bool result = false;
 
-            if (typeof(IDictionary).IsAssignableFrom(type) && type.IsGenericType)
-            {
-                Type[] arguments = type.GetGenericArguments();
+            TypeAnalyzer analyst = TypeAnalyzer.CreateAnalyst(type);
 
-                if (arguments.Length == 2)
-                {
-                    result = !TypeAnalyzer.IsSimpleDataType(arguments[0]);
-                }
+            if (analyst.TypeCategory == TypeCategory.IDictionary)
+            {
+                result = !TypeAnalyzer.IsSimpleDataType(analyst.UnderlyingTypes[0]);
             }
 
             return result;
