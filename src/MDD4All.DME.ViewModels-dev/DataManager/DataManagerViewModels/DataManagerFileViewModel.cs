@@ -17,12 +17,14 @@ namespace MDD4All.DME.ViewModels.DataManager
         public DataManagerFileViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
                                         DataManagerSettingsViewModel dataManagerSettings,
-                                        DataManagerModelViewModel dataManagerModel)
+                                        DataManagerModelViewModel dataManagerModel,
+                                        DictionaryKeyAnalyzer dictionaryKeyAnalyzer)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
             _dataManagerSettings = dataManagerSettings;
             _dataManagerModel = dataManagerModel;
+            _dictionaryKeyAnalyzer = dictionaryKeyAnalyzer;
 
             this.InitializeCommands();
         }
@@ -48,6 +50,10 @@ namespace MDD4All.DME.ViewModels.DataManager
         // so that stays in one place instead of being repeated per file command.
         private readonly DataManagerModelViewModel _dataManagerModel;
 
+        // Asked before every save whether anything would be dropped.
+        private readonly DictionaryKeyAnalyzer _dictionaryKeyAnalyzer;
+
+        #region Logic
         private DataSerializationViewModel? _dataSerializationViewModel;
 
         public DataSerializationViewModel? DataSerializationViewModel
@@ -73,8 +79,16 @@ namespace MDD4All.DME.ViewModels.DataManager
         }
 
         // The path lives here, not in the serialization view model - that one only ever sees content.
+        // It only ever names a file that was really read or written, which is why the pending one
+        // below waits separately instead of moving this one early.
         public string CurrentFilePath { get; private set; } = "";
 
+        // Where a confirmed save will write to. Set while the warning below is on screen, because
+        // the command returns before the answer arrives and Save As must not ask for a path twice.
+        private string _pendingSavePath = "";
+        #endregion
+
+        #region UI
         public string StatusText
         {
             get
@@ -105,6 +119,59 @@ namespace MDD4All.DME.ViewModels.DataManager
                 this.OnPropertyChanged(nameof(LoadErrorMessage));
             }
         }
+
+        private bool _showComplexKeyWarning;
+
+        // Kept apart from LoadErrorMessage: that one reports a file that could not be opened and
+        // clears itself, this one blocks until it is answered.
+        public bool ShowComplexKeyWarning
+        {
+            get
+            {
+                return _showComplexKeyWarning;
+            }
+            private set
+            {
+                if (_showComplexKeyWarning != value)
+                {
+                    _showComplexKeyWarning = value;
+                    this.OnPropertyChanged(nameof(ShowComplexKeyWarning));
+                }
+            }
+        }
+
+        private string _complexKeyWarningMessage = "";
+
+        public string ComplexKeyWarningMessage
+        {
+            get
+            {
+                return _complexKeyWarningMessage;
+            }
+            private set
+            {
+                _complexKeyWarningMessage = value;
+                this.OnPropertyChanged(nameof(ComplexKeyWarningMessage));
+            }
+        }
+
+        private string _saveWarningMessage = "";
+
+        // What a finished save had to leave out. The counterpart to LoadErrorMessage, kept apart
+        // from it so neither one clears the other.
+        public string SaveWarningMessage
+        {
+            get
+            {
+                return _saveWarningMessage;
+            }
+            private set
+            {
+                _saveWarningMessage = value;
+                this.OnPropertyChanged(nameof(SaveWarningMessage));
+            }
+        }
+        #endregion
 
         #endregion
 
@@ -279,7 +346,9 @@ namespace MDD4All.DME.ViewModels.DataManager
                         }
                         else
                         {
-                            // Verified only when the file did not state the type - then it is a guess.
+                            // Reads the file and builds the object from it. The type is held against
+                            // the file's contents only when it was guessed - one the file named
+                            // itself needs no checking.
                             bool loaded = this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
 
                             // Both write to the configuration file, so a file that would not open
@@ -310,24 +379,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteSaveDataFile()
         {
-            FileInfo fileInfo = new FileInfo(this.CurrentFilePath);
+            this.ApplySaveSettings();
 
-            if (fileInfo.DirectoryName != null)
-            {
-                _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
-            }
-
-            // Read at save time, so toggling the setting takes effect without reopening the file.
-            this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
-
-            if (fileInfo.Extension.ToLower() == ".xml")
-            {
-                this.SerializeToXml();
-            }
-            else
-            {
-                File.WriteAllText(this.CurrentFilePath, this.DataSerializationViewModel.ActiveObjectJsonString);
-            }
+            this.SaveOrAskFirst(this.CurrentFilePath);
         }
 
         private void ExecuteSaveDataFileAs()
@@ -343,36 +397,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (saveLocationChosen)
                 {
-                    FileInfo fileInfo = new FileInfo(fileName);
+                    this.ApplySaveSettings();
 
-                    this.CurrentFilePath = fileName;
-
-                    // Read at save time, so toggling the setting takes effect without reopening the file.
-                    this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
-
-                    if (fileInfo.Extension.ToLower() == ".xml")
-                    {
-                        this.SerializeToXml();
-                    }
-                    else
-                    {
-                        File.WriteAllText(fileName, this.DataSerializationViewModel.ActiveObjectJsonString);
-                    }
-
-                    DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
-                    {
-                        DataModelDescription = _dataManagerSettings.CurrentDataModel!,
-                        FilePath = fileName
-                    };
-
-                    _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
-
-                    if (fileInfo.DirectoryName != null)
-                    {
-                        _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
-                    }
-
-                    this.OnPropertyChanged(nameof(StatusText));
+                    this.SaveOrAskFirst(fileName);
                 }
 
             }, null);
@@ -439,6 +466,100 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
 
             return loaded;
+        }
+
+        // Read at save time, so toggling a setting takes effect without reopening the file.
+        private void ApplySaveSettings()
+        {
+            this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
+            this.DataSerializationViewModel.WriteComplexDictionaryKeys = _dataManagerSettings.WriteComplexDictionaryKeys;
+        }
+
+        // Saving with complex dictionary keys turned off drops those entries. Losing part of an
+        // object graph is not something to mention in passing, so nothing is written until the
+        // user has answered - and the affected properties are named, because "some data will be
+        // lost" is not something anyone can act on.
+        private void SaveOrAskFirst(string filePath)
+        {
+            string[] affected = Array.Empty<string>();
+
+            if (!_dataManagerSettings.WriteComplexDictionaryKeys)
+            {
+                affected = _dictionaryKeyAnalyzer.FindDictionariesWithComplexKey(this.DataSerializationViewModel!.SelectedType);
+            }
+
+            if (affected.Length == 0)
+            {
+                this.WriteDataFile(filePath);
+            }
+            else if (_dataManagerSettings.ConfirmComplexKeyLossWithDialog)
+            {
+                // Kept until the answer arrives. Save As has already asked for the path by now
+                // and must not open its file dialog a second time.
+                _pendingSavePath = filePath;
+
+                this.ComplexKeyWarningMessage = "Diese Einträge werden beim Speichern verworfen, weil komplexe "
+                                                + "Dictionary-Schlüssel abgeschaltet sind: "
+                                                + string.Join(", ", affected) + ".";
+
+                this.ShowComplexKeyWarning = true;
+            }
+            else
+            {
+                // The other setting: write first, report afterwards. Nothing left to answer, so
+                // the wording states what happened instead of what is about to.
+                this.WriteDataFile(filePath);
+
+                this.SaveWarningMessage = "Diese Einträge wurden beim Speichern verworfen, weil komplexe "
+                                          + "Dictionary-Schlüssel abgeschaltet sind: "
+                                          + string.Join(", ", affected) + ".";
+            }
+        }
+
+        // The answer to the warning above. Cancelling leaves the file on disk untouched.
+        public void AnswerComplexKeyWarning(bool writeAnyway)
+        {
+            this.ShowComplexKeyWarning = false;
+
+            if (writeAnyway)
+            {
+                this.WriteDataFile(_pendingSavePath);
+            }
+
+            _pendingSavePath = "";
+        }
+
+        // The one place a data file is written. Both save commands end up here, and so does the
+        // warning dialog once it has been confirmed.
+        private void WriteDataFile(string filePath)
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+
+            this.CurrentFilePath = filePath;
+
+            if (fileInfo.Extension.ToLower() == ".xml")
+            {
+                this.SerializeToXml();
+            }
+            else
+            {
+                File.WriteAllText(filePath, this.DataSerializationViewModel!.ActiveObjectJsonString);
+            }
+
+            DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
+            {
+                DataModelDescription = _dataManagerSettings.CurrentDataModel!,
+                FilePath = filePath
+            };
+
+            _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
+
+            if (fileInfo.DirectoryName != null)
+            {
+                _dataManagerSettings.LastUsedDataFilePath = fileInfo.DirectoryName;
+            }
+
+            this.OnPropertyChanged(nameof(StatusText));
         }
 
         // The serialization view model reports the cause and stays free of wording - phrasing it

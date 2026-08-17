@@ -159,6 +159,26 @@ namespace MDD4All.DME.ViewModels.DataManager
                     DismissNotification();
                 }
             }
+            else if (e.PropertyName == nameof(DataManagerFileViewModel.SaveWarningMessage))
+            {
+                if (_dataFileManager.SaveWarningMessage != "")
+                {
+                    ShowNotification(_dataFileManager.SaveWarningMessage, NotificationSeverity.Error);
+                }
+            }
+            else if (e.PropertyName == nameof(DataManagerFileViewModel.ShowComplexKeyWarning))
+            {
+                // A save that would drop data has to be answered, not just mentioned - the
+                // notification below the content is too easy to save straight past.
+                if (_dataFileManager.ShowComplexKeyWarning)
+                {
+                    ActiveOverlay = OverlayState.ComplexKeyWarning;
+                }
+                else
+                {
+                    ActiveOverlay = OverlayState.None;
+                }
+            }
         }
 
         private void OnDataModelManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)

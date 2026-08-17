@@ -55,6 +55,10 @@ namespace MDD4All.DME.ViewModels.DataManager
         // its own type and be reopened without picking the matching data model first.
         public bool IncludeTypeInformation { get; set; } = false;
 
+        // Off writes a dictionary keyed by an object as null instead of the Key/Value form only
+        // this application understands. Costs the content, keeps the file readable elsewhere.
+        public bool WriteComplexDictionaryKeys { get; set; } = true;
+
         public string ActiveObjectJsonString
         {
             get
@@ -63,7 +67,8 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (ActiveObject != null && SelectedType != null)
                 {
-                    result = DynamicInvoker.SerializeJson(ActiveObject, IncludeTypeInformation);
+                    result = DynamicInvoker.SerializeJson(ActiveObject, IncludeTypeInformation,
+                                                          WriteComplexDictionaryKeys);
                 }
 
                 return result;

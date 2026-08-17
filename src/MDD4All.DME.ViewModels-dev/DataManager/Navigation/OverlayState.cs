@@ -5,6 +5,7 @@ namespace MDD4All.DME.ViewModels.DataManager
         None,
         Settings,
         TypeSelection,
-        CultureChange
+        CultureChange,
+        ComplexKeyWarning
     }
 }
