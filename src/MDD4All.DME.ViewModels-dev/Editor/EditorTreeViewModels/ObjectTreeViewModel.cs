@@ -95,6 +95,53 @@ namespace MDD4All.DME.ViewModels.Editor
             }
         }
 
+        // How many levels the tree actually has, counting the root as 1.
+        //
+        // Walked on every read rather than remembered. Create, Add and Delete all change it, and
+        // Create changes it by an unknown amount - it builds the whole subtree of the new object
+        // in one go. A stored value would be stale after any of them, and the tree is in memory
+        // anyway, so walking it costs nothing worth saving.
+        public int MaxDepth
+        {
+            get
+            {
+                int result = 0;
+
+                foreach (ITreeNode rootNode in this.TreeRootNodes)
+                {
+                    int depthOfBranch = MeasureDepth(rootNode);
+
+                    if (depthOfBranch > result)
+                    {
+                        result = depthOfBranch;
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        // A leaf is one level. Everything hangs in Children, including a dictionary entry's key
+        // and value editors, so there is no case to treat separately here.
+        private int MeasureDepth(ITreeNode node)
+        {
+            int deepestChild = 0;
+
+            foreach (ITreeNode child in node.Children)
+            {
+                int depthOfChild = MeasureDepth(child);
+
+                if (depthOfChild > deepestChild)
+                {
+                    deepestChild = depthOfChild;
+                }
+            }
+
+            int result = deepestChild + 1;
+
+            return result;
+        }
+
         public void RaiseTreeChanged()
         {
             OnPropertyChanged("TreeChanged");

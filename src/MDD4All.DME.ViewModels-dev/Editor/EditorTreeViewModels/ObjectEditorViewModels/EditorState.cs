@@ -98,9 +98,15 @@ namespace MDD4All.DME.ViewModels.Editor
                 bool result = false;
 
                 // The root card has nothing to collapse into, so it's never collapsible.
-                if (_viewModel.HasChildNodes && CurrentDepth > 1)
+                if (CurrentDepth > 1)
                 {
-                    result = true;
+                    // A collection that exists keeps its expander even while it is empty. It can
+                    // gain entries at any time, and without it a freshly created empty one would
+                    // have no way to be closed again.
+                    if (_viewModel.HasChildNodes || this.ShowAddButton)
+                    {
+                        result = true;
+                    }
                 }
 
                 return result;

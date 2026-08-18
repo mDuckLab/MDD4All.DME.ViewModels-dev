@@ -71,8 +71,24 @@ namespace MDD4All.DME.ViewModels.Editor
 
         private void CreateListInstance()
         {
-            Type listType = typeof(List<>);
-            Type concreteListType = listType.MakeGenericType(this.UnderlyingType);
+            // The declared type gets built, not always a List<>. A property declared as
+            // ObservableCollection<T> cannot hold a List<T>, so creating one would throw the
+            // moment it is assigned back.
+            Type? declaredType = this.TypeAnalyzer.AnalyzeType;
+
+            Type concreteListType;
+
+            if (declaredType != null && !declaredType.IsInterface && !declaredType.IsAbstract
+                && declaredType.GetConstructor(Type.EmptyTypes) != null)
+            {
+                concreteListType = declaredType;
+            }
+            else
+            {
+                // Declared as IList<T> or something else that cannot be built - then a plain
+                // List<T> is what fits into it.
+                concreteListType = typeof(List<>).MakeGenericType(this.UnderlyingType);
+            }
 
             object? dynamicList = Activator.CreateInstance(concreteListType);
 

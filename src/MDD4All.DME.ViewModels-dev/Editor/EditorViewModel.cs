@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using MDD4All.DME.ViewModels.Editor;
+using MDD4All.DME.ViewModels.Editor.Settings;
 using MDD4All.UI.DataModels.Tree;
 using System;
 using System.ComponentModel;
@@ -9,10 +10,13 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class EditorViewModel : ObservableObject
     {
         #region constructor
-        public EditorViewModel(DataManagerObjectViewModel dataManagerObject)
+        public EditorViewModel(DataManagerObjectViewModel dataManagerObject,
+                               EditorAppearanceSettingsViewModel editorSettings)
         {
             _dataManagerObject = dataManagerObject;
             _dataManagerObject.PropertyChanged += OnDataManagerObjectPropertyChanged;
+
+            _editorSettings = editorSettings;
 
             // As a lazily-constructed singleton, this can be built after a data file
             // was already loaded (e.g. the switch to the Editor screen itself triggers
@@ -27,6 +31,34 @@ namespace MDD4All.DME.ViewModels.DataManager
         private ObjectTreeViewModel? _treeViewModel;
 
         private readonly DataManagerObjectViewModel _dataManagerObject;
+
+        // The visible depth is stored across sessions, so it has to be held against whatever
+        // document is open now.
+        private readonly EditorAppearanceSettingsViewModel _editorSettings;
+
+        // The deepest level the stepper offers as a number: one below what the document has.
+        //
+        // That last level belongs to "All", and the difference is not cosmetic. A number names a
+        // fixed level and stays where it is when the tree grows - which it does the moment Create
+        // builds a subtree. "All" is a rule instead of a level, so it keeps meaning everything.
+        // Were the highest number the full depth, the two would be the same until the first
+        // Create silently turned one of them into "almost everything".
+        //
+        // Two at the least, below that the stepper has nothing to show.
+        public int MaxSelectableDepth
+        {
+            get
+            {
+                int result = 2;
+
+                if (this.TreeViewModel != null && this.TreeViewModel.MaxDepth - 1 > result)
+                {
+                    result = this.TreeViewModel.MaxDepth - 1;
+                }
+
+                return result;
+            }
+        }
 
         public ObjectTreeViewModel? TreeViewModel
         {
@@ -123,6 +155,20 @@ namespace MDD4All.DME.ViewModels.DataManager
             else
             {
                 TreeViewModel = null;
+            }
+
+            this.ClampVisibleDepth();
+        }
+
+        // The visible depth survives a restart, so a document opened later can be shallower than
+        // whatever was set for the last one. Left alone, the stepper would show a level the tree
+        // does not have.
+        private void ClampVisibleDepth()
+        {
+            // 0 stands for "All" and fits every document.
+            if (_editorSettings.MaxDepth > this.MaxSelectableDepth)
+            {
+                _editorSettings.MaxDepth = this.MaxSelectableDepth;
             }
         }
 

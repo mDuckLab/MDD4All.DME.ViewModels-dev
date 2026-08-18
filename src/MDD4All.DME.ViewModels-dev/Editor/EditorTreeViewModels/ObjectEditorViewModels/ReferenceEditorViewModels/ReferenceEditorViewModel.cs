@@ -110,9 +110,12 @@ namespace MDD4All.DME.ViewModels.Editor
                         // Reset the value in the underlying data model via reflection
                         propertyAccess.PropertyInfo.SetValue(parentViewModel.Item, null);
 
-                        // Clear the local state of this editor
+                        // Clear the local state of this editor. Collapsing matters: with the
+                        // children gone the expander disappears, so an expanded card would have
+                        // no way left to close itself.
                         this.Item = null;
                         this.Children.Clear();
+                        this.EditorState.IsExpanded = false;
 
                         // Notify the parent about the state change
                         parentViewModel.RaiseStateChanged();
@@ -141,9 +144,10 @@ namespace MDD4All.DME.ViewModels.Editor
                     // This is triggered if the delete button on the Value editor is clicked
                     entryParent.ChangeChild(this.Access, null);
 
-                    // Clear the local state of the value editor
+                    // Clear the local state of the value editor, same reason as above
                     this.Item = null;
                     this.Children.Clear();
+                    this.EditorState.IsExpanded = false;
 
                     entryParent.RaiseStateChanged();
                 }
