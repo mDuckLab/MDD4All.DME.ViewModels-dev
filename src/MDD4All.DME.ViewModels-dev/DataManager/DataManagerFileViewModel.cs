@@ -1,3 +1,5 @@
+using MDD4All.DME.DataAccess.DataFiles;
+using MDD4All.DME.DataAccess.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MDD4All.DME.Configurations;
@@ -17,7 +19,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                                         DataManagerSettingsViewModel dataManagerSettings,
                                         DataManagerModelViewModel dataManagerModel,
                                         DataManagerObjectViewModel dataManagerObject,
-                                        DataSerializationViewModel dataSerialization,
+                                        DataFileProvider dataFileProvider,
+                                        DataSerializer dataSerializer,
                                         DictionaryKeyAnalyzer dictionaryKeyAnalyzer)
         {
             _fileLoader = fileLoader;
@@ -25,7 +28,8 @@ namespace MDD4All.DME.ViewModels.DataManager
             _dataManagerSettings = dataManagerSettings;
             _dataManagerModel = dataManagerModel;
             _dataManagerObject = dataManagerObject;
-            _dataSerialization = dataSerialization;
+            _dataFileProvider = dataFileProvider;
+            _dataSerializer = dataSerializer;
             _dictionaryKeyAnalyzer = dictionaryKeyAnalyzer;
 
             this.InitializeCommands();
@@ -55,8 +59,11 @@ namespace MDD4All.DME.ViewModels.DataManager
         // Where the loaded object lives. This class is the only one that fills it.
         private readonly DataManagerObjectViewModel _dataManagerObject;
 
-        // Object to text and back. Holds nothing, so it is asked rather than filled.
-        private readonly DataSerializationViewModel _dataSerialization;
+        // Path to object and back. Everything that touches the disk goes through here.
+        private readonly DataFileProvider _dataFileProvider;
+
+        // Object to text, for the raw data view. Writing goes through the provider above.
+        private readonly DataSerializer _dataSerializer;
 
         // Asked before every save whether anything would be dropped.
         private readonly DictionaryKeyAnalyzer _dictionaryKeyAnalyzer;
@@ -81,7 +88,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (_dataManagerObject.RootObject != null)
                 {
-                    result = _dataSerialization.ToJson(_dataManagerObject.RootObject,
+                    result = _dataSerializer.ToJson(_dataManagerObject.RootObject,
                                                        _dataManagerSettings.SaveTypeInformation,
                                                        _dataManagerSettings.WriteComplexDictionaryKeys);
                 }
@@ -98,7 +105,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (_dataManagerObject.RootObject != null)
                 {
-                    result = _dataSerialization.ToXml(_dataManagerObject.RootObject);
+                    result = _dataSerializer.ToXml(_dataManagerObject.RootObject);
                 }
 
                 return result;
@@ -242,7 +249,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                             // A plain Activator.CreateInstance - no serialization involved, which is
                             // why this path needs none of the machinery that opening a file does.
-                            object? newInstance = _dataSerialization.CreateInstance(type);
+                            object? newInstance = _dataSerializer.CreateInstance(type);
 
                             _dataManagerObject.SetObject(type, newInstance);
 
@@ -415,58 +422,30 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             bool loaded = false;
 
-            string content = "";
-            bool contentRead = false;
+            // Handed back rather than stored, so a failure leaves the open file exactly as it
+            // was - there is simply nothing to take over.
+            object? loadedObject;
 
-            try
+            LoadResult result = _dataFileProvider.Read(filePath, dataModelRootType, verifyRootType,
+                                                       out loadedObject);
+
+            if (result == LoadResult.Loaded)
             {
-                content = File.ReadAllText(filePath);
-                contentRead = true;
+                this.LoadErrorMessage = "";
+
+                this.CurrentFilePath = filePath;
+
+                // The one moment a document changes. Everything watching the object hears it
+                // from here, whether it was opened, created or replaced.
+                _dataManagerObject.SetObject(dataModelRootType, loadedObject);
+
+                this.OnPropertyChanged(nameof(StatusText));
+
+                loaded = true;
             }
-            catch (Exception exception)
+            else
             {
-                this.LoadErrorMessage = "Die Datei konnte nicht gelesen werden.";
-                Console.WriteLine(exception);
-            }
-
-            if (contentRead)
-            {
-                // Handed back rather than stored, so a failure below leaves the open file exactly
-                // as it was - there is simply nothing to take over.
-                object? loadedObject;
-
-                LoadResult result;
-
-                // The format follows from the file name, which is this class's business. What to
-                // make of the content is not.
-                if (filePath.ToLower().EndsWith("xml"))
-                {
-                    result = _dataSerialization.LoadFromXml(content, dataModelRootType, out loadedObject);
-                }
-                else
-                {
-                    result = _dataSerialization.LoadFromJson(content, dataModelRootType, verifyRootType,
-                                                             out loadedObject);
-                }
-
-                if (result == LoadResult.Loaded)
-                {
-                    this.LoadErrorMessage = "";
-
-                    this.CurrentFilePath = filePath;
-
-                    // The one moment a document changes. Everything watching the object hears it
-                    // from here, whether it was opened, created or replaced.
-                    _dataManagerObject.SetObject(dataModelRootType, loadedObject);
-
-                    this.OnPropertyChanged(nameof(StatusText));
-
-                    loaded = true;
-                }
-                else
-                {
-                    this.LoadErrorMessage = this.DescribeLoadFailure(result, dataModelRootType);
-                }
+                this.LoadErrorMessage = this.DescribeLoadFailure(result, dataModelRootType);
             }
 
             return loaded;
@@ -534,14 +513,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             this.CurrentFilePath = filePath;
 
-            if (fileInfo.Extension.ToLower() == ".xml")
-            {
-                File.WriteAllText(filePath, this.XmlString);
-            }
-            else
-            {
-                File.WriteAllText(filePath, this.JsonString);
-            }
+            _dataFileProvider.Write(filePath, _dataManagerObject.RootObject!,
+                                    _dataManagerSettings.SaveTypeInformation,
+                                    _dataManagerSettings.WriteComplexDictionaryKeys);
 
             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
             {
@@ -567,6 +541,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             switch (result)
             {
+                case LoadResult.FileNotReadable:
+                    message = "Die Datei konnte nicht gelesen werden.";
+                    break;
+
                 case LoadResult.NotReadableAsJson:
                     message = "Die Datei ist kein gültiges JSON.";
                     break;

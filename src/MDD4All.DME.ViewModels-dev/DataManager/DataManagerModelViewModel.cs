@@ -1,3 +1,5 @@
+using MDD4All.DME.DataAccess.DataFiles;
+using MDD4All.DME.DataAccess.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MDD4All.AssemblyLoading.Contracts;
@@ -16,10 +18,12 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region constructor
         public DataManagerModelViewModel(IFileLoader fileLoader,
                                         IAssemblyProvider assemblyProvider,
+                                        DataFileProvider dataFileProvider,
                                         DataManagerSettingsViewModel dataManagerSettings)
         {
             _fileLoader = fileLoader;
             _assemblyProvider = assemblyProvider;
+            _dataFileProvider = dataFileProvider;
             _dataManagerSettings = dataManagerSettings;
 
             this.InitializeCommands();
@@ -37,6 +41,9 @@ namespace MDD4All.DME.ViewModels.DataManager
         private readonly IFileLoader _fileLoader;
 
         private readonly IAssemblyProvider _assemblyProvider;
+
+        // Asked what type a file names, so this class never opens one itself.
+        private readonly DataFileProvider _dataFileProvider;
 
         private readonly DataManagerSettingsViewModel _dataManagerSettings;
 
@@ -135,42 +142,39 @@ namespace MDD4All.DME.ViewModels.DataManager
         {
             DataModelDescriptor? result = null;
 
-            if (filePath.ToLower().EndsWith("json"))
+            string? qualifiedTypeName = _dataFileProvider.ReadTypeName(filePath);
+
+            if (qualifiedTypeName != null)
             {
-                string? qualifiedTypeName = DataSerializationViewModel.ReadTypeNameFromJson(File.ReadAllText(filePath));
+                string[] typeNameParts = qualifiedTypeName.Split(',');
 
-                if (qualifiedTypeName != null)
+                string typeName = typeNameParts[0].Trim();
+
+                if (typeNameParts.Length > 1)
                 {
-                    string[] typeNameParts = qualifiedTypeName.Split(',');
+                    // Data model DLLs referenced by the application end up next to it.
+                    string assemblyName = typeNameParts[1].Trim();
+                    string dllPath = Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll");
 
-                    string typeName = typeNameParts[0].Trim();
-
-                    if (typeNameParts.Length > 1)
-                    {
-                        // Data model DLLs referenced by the application end up next to it.
-                        string assemblyName = typeNameParts[1].Trim();
-                        string dllPath = Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll");
-
-                        if (File.Exists(dllPath))
-                        {
-                            result = new DataModelDescriptor
-                            {
-                                DllPath = dllPath,
-                                FullTypeName = typeName
-                            };
-                        }
-                    }
-
-                    // Not next to the application, so it can only be a model loaded from elsewhere -
-                    // keep that DLL and take just the type the file actually names.
-                    if (result == null && _dataManagerSettings.CurrentDataModel != null)
+                    if (File.Exists(dllPath))
                     {
                         result = new DataModelDescriptor
                         {
-                            DllPath = _dataManagerSettings.CurrentDataModel.DllPath,
+                            DllPath = dllPath,
                             FullTypeName = typeName
                         };
                     }
+                }
+
+                // Not next to the application, so it can only be a model loaded from elsewhere -
+                // keep that DLL and take just the type the file actually names.
+                if (result == null && _dataManagerSettings.CurrentDataModel != null)
+                {
+                    result = new DataModelDescriptor
+                    {
+                        DllPath = _dataManagerSettings.CurrentDataModel.DllPath,
+                        FullTypeName = typeName
+                    };
                 }
             }
 
