@@ -3,11 +3,9 @@ using CommunityToolkit.Mvvm.Input;
 using MDD4All.DME.Configurations;
 using MDD4All.FileAccess.Contracts;
 using System;
-using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Windows.Input;
-using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
@@ -18,12 +16,16 @@ namespace MDD4All.DME.ViewModels.DataManager
                                         IFileSaver fileSaver,
                                         DataManagerSettingsViewModel dataManagerSettings,
                                         DataManagerModelViewModel dataManagerModel,
+                                        DataManagerObjectViewModel dataManagerObject,
+                                        DataSerializationViewModel dataSerialization,
                                         DictionaryKeyAnalyzer dictionaryKeyAnalyzer)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
             _dataManagerSettings = dataManagerSettings;
             _dataManagerModel = dataManagerModel;
+            _dataManagerObject = dataManagerObject;
+            _dataSerialization = dataSerialization;
             _dictionaryKeyAnalyzer = dictionaryKeyAnalyzer;
 
             this.InitializeCommands();
@@ -50,35 +52,17 @@ namespace MDD4All.DME.ViewModels.DataManager
         // so that stays in one place instead of being repeated per file command.
         private readonly DataManagerModelViewModel _dataManagerModel;
 
+        // Where the loaded object lives. This class is the only one that fills it.
+        private readonly DataManagerObjectViewModel _dataManagerObject;
+
+        // Object to text and back. Holds nothing, so it is asked rather than filled.
+        private readonly DataSerializationViewModel _dataSerialization;
+
         // Asked before every save whether anything would be dropped.
         private readonly DictionaryKeyAnalyzer _dictionaryKeyAnalyzer;
 
         #region Logic
-        private DataSerializationViewModel? _dataSerializationViewModel;
-
-        public DataSerializationViewModel? DataSerializationViewModel
-        {
-            get
-            {
-                return _dataSerializationViewModel;
-            }
-            private set
-            {
-                if (_dataSerializationViewModel != null)
-                {
-                    _dataSerializationViewModel.PropertyChanged -= this.OnDataSerializationPropertyChanged;
-                }
-
-                _dataSerializationViewModel = value;
-
-                if (_dataSerializationViewModel != null)
-                {
-                    _dataSerializationViewModel.PropertyChanged += this.OnDataSerializationPropertyChanged;
-                }
-            }
-        }
-
-        // The path lives here, not in the serialization view model - that one only ever sees content.
+        // The path lives here, not with the object - that one only ever sees content.
         // It only ever names a file that was really read or written, which is why the pending one
         // below waits separately instead of moving this one early.
         public string CurrentFilePath { get; private set; } = "";
@@ -86,6 +70,40 @@ namespace MDD4All.DME.ViewModels.DataManager
         // Where a confirmed save will write to. Set while the warning below is on screen, because
         // the command returns before the answer arrives and Save As must not ask for a path twice.
         private string _pendingSavePath = "";
+
+        // The open object as text. The same string goes to disk and onto the screen, and the
+        // settings are read here rather than kept, so changing one takes effect right away.
+        public string JsonString
+        {
+            get
+            {
+                string result = string.Empty;
+
+                if (_dataManagerObject.RootObject != null)
+                {
+                    result = _dataSerialization.ToJson(_dataManagerObject.RootObject,
+                                                       _dataManagerSettings.SaveTypeInformation,
+                                                       _dataManagerSettings.WriteComplexDictionaryKeys);
+                }
+
+                return result;
+            }
+        }
+
+        public string XmlString
+        {
+            get
+            {
+                string result = string.Empty;
+
+                if (_dataManagerObject.RootObject != null)
+                {
+                    result = _dataSerialization.ToXml(_dataManagerObject.RootObject);
+                }
+
+                return result;
+            }
+        }
         #endregion
 
         #region UI
@@ -94,7 +112,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             get
             {
                 string result = "";
-                if (this.DataSerializationViewModel != null)
+                if (_dataManagerObject.HasContent)
                 {
                     result = "Filename: " + this.CurrentFilePath;
                     result += " ● Data Model: " + _dataManagerSettings.CurrentDataModel!.FullTypeName;
@@ -175,20 +193,6 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         #endregion
 
-        #region Event Handlers
-        // A freshly assigned DataSerializationViewModel starts out empty - LoadFromFile()/
-        // CreateNewInstance() populate ActiveObject a moment later. Notifying our own
-        // subscribers (MainViewModel's tree rebuild) right here would rebuild the tree
-        // from the still-empty object, so wait for ActiveObject itself to change instead.
-        private void OnDataSerializationPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(DataSerializationViewModel.ActiveObject))
-            {
-                this.OnPropertyChanged(nameof(DataSerializationViewModel));
-            }
-        }
-        #endregion
-
         #region Commands
         public ICommand NewDataFileCommand { get; private set; } = null!;
 
@@ -236,15 +240,17 @@ namespace MDD4All.DME.ViewModels.DataManager
                         {
                             this.CurrentFilePath = fileName;
 
-                            this.DataSerializationViewModel = new DataSerializationViewModel(type);
-
                             // A plain Activator.CreateInstance - no serialization involved, which is
                             // why this path needs none of the machinery that opening a file does.
-                            this.DataSerializationViewModel.CreateNewInstance();
+                            object? newInstance = _dataSerialization.CreateInstance(type);
+
+                            _dataManagerObject.SetObject(type, newInstance);
 
                             // Written out immediately, so a new file exists on disk even if the user
-                            // never edits anything.
-                            this.SaveDataFileCommand.Execute(null);
+                            // never edits anything. Straight to the file rather than through the
+                            // save command: the warning about dropped entries belongs to a save the
+                            // user asked for, not to a file that is only just being created.
+                            this.WriteDataFile(fileName);
 
                             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
                             {
@@ -379,8 +385,6 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void ExecuteSaveDataFile()
         {
-            this.ApplySaveSettings();
-
             this.SaveOrAskFirst(this.CurrentFilePath);
         }
 
@@ -397,8 +401,6 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (saveLocationChosen)
                 {
-                    this.ApplySaveSettings();
-
                     this.SaveOrAskFirst(fileName);
                 }
 
@@ -429,8 +431,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (contentRead)
             {
-                // Shown to nobody yet, so a failure below leaves the open file exactly as it was.
-                DataSerializationViewModel candidate = new DataSerializationViewModel(dataModelRootType);
+                // Handed back rather than stored, so a failure below leaves the open file exactly
+                // as it was - there is simply nothing to take over.
+                object? loadedObject;
 
                 LoadResult result;
 
@@ -438,11 +441,12 @@ namespace MDD4All.DME.ViewModels.DataManager
                 // make of the content is not.
                 if (filePath.ToLower().EndsWith("xml"))
                 {
-                    result = candidate.LoadFromXml(content);
+                    result = _dataSerialization.LoadFromXml(content, dataModelRootType, out loadedObject);
                 }
                 else
                 {
-                    result = candidate.LoadFromJson(content, verifyRootType);
+                    result = _dataSerialization.LoadFromJson(content, dataModelRootType, verifyRootType,
+                                                             out loadedObject);
                 }
 
                 if (result == LoadResult.Loaded)
@@ -450,11 +454,11 @@ namespace MDD4All.DME.ViewModels.DataManager
                     this.LoadErrorMessage = "";
 
                     this.CurrentFilePath = filePath;
-                    this.DataSerializationViewModel = candidate;
 
-                    // The object was filled before anyone subscribed, so the usual notification
-                    // from the ActiveObject setter never fired - the editor is told here instead.
-                    this.OnPropertyChanged(nameof(DataSerializationViewModel));
+                    // The one moment a document changes. Everything watching the object hears it
+                    // from here, whether it was opened, created or replaced.
+                    _dataManagerObject.SetObject(dataModelRootType, loadedObject);
+
                     this.OnPropertyChanged(nameof(StatusText));
 
                     loaded = true;
@@ -468,13 +472,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             return loaded;
         }
 
-        // Read at save time, so toggling a setting takes effect without reopening the file.
-        private void ApplySaveSettings()
-        {
-            this.DataSerializationViewModel!.IncludeTypeInformation = _dataManagerSettings.SaveTypeInformation;
-            this.DataSerializationViewModel.WriteComplexDictionaryKeys = _dataManagerSettings.WriteComplexDictionaryKeys;
-        }
-
         // Saving with complex dictionary keys turned off drops those entries. Losing part of an
         // object graph is not something to mention in passing, so nothing is written until the
         // user has answered - and the affected properties are named, because "some data will be
@@ -485,7 +482,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (!_dataManagerSettings.WriteComplexDictionaryKeys)
             {
-                affected = _dictionaryKeyAnalyzer.FindDictionariesWithComplexKey(this.DataSerializationViewModel!.SelectedType);
+                affected = _dictionaryKeyAnalyzer.FindDictionariesWithComplexKey(_dataManagerObject.RootType);
             }
 
             if (affected.Length == 0)
@@ -539,11 +536,11 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (fileInfo.Extension.ToLower() == ".xml")
             {
-                this.SerializeToXml();
+                File.WriteAllText(filePath, this.XmlString);
             }
             else
             {
-                File.WriteAllText(filePath, this.DataSerializationViewModel!.ActiveObjectJsonString);
+                File.WriteAllText(filePath, this.JsonString);
             }
 
             DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
@@ -593,14 +590,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             return message;
         }
 
-        private void SerializeToXml()
-        {
-            XmlSerializer mySerializer = new XmlSerializer(this.DataSerializationViewModel!.SelectedType!);
-
-            StreamWriter myWriter = new StreamWriter(this.CurrentFilePath);
-            mySerializer.Serialize(myWriter, this.DataSerializationViewModel.ActiveObject);
-            myWriter.Close();
-        }
         #endregion
     }
 }

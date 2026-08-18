@@ -10,7 +10,8 @@ namespace MDD4All.DME.ViewModels.DataManager
         #region constructor
         public MainViewModel(ILanguageSetter languageSetter,
                              DataManagerFileViewModel dataFileManager,
-                             DataManagerModelViewModel dataModelManager)
+                             DataManagerModelViewModel dataModelManager,
+                             DataManagerObjectViewModel dataManagerObject)
         {
             _languageSetter = languageSetter;
             _languageSetter.CultureChanged += OnCultureChanged;
@@ -20,6 +21,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             _dataModelManager = dataModelManager;
             _dataModelManager.PropertyChanged += OnDataModelManagerPropertyChanged;
+
+            // Never replaced, so subscribing once here is enough for the whole run.
+            _dataManagerObject = dataManagerObject;
+            _dataManagerObject.PropertyChanged += OnDataManagerObjectPropertyChanged;
         }
         #endregion
 
@@ -30,6 +35,8 @@ namespace MDD4All.DME.ViewModels.DataManager
         private DataManagerFileViewModel _dataFileManager;
 
         private DataManagerModelViewModel _dataModelManager;
+
+        private DataManagerObjectViewModel _dataManagerObject;
 
         private ViewState _viewState = ViewState.ShowStartPage;
 
@@ -141,13 +148,18 @@ namespace MDD4All.DME.ViewModels.DataManager
             ActiveOverlay = OverlayState.CultureChange;
         }
 
-        private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        // A file was opened or created - that is the moment the editor takes over the screen.
+        private void OnDataManagerObjectPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataManagerFileViewModel.DataSerializationViewModel))
+            if (e.PropertyName == nameof(DataManagerObjectViewModel.RootObject))
             {
                 ViewState = ViewState.ShowEditor;
             }
-            else if (e.PropertyName == nameof(DataManagerFileViewModel.LoadErrorMessage))
+        }
+
+        private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DataManagerFileViewModel.LoadErrorMessage))
             {
                 if (_dataFileManager.LoadErrorMessage != "")
                 {

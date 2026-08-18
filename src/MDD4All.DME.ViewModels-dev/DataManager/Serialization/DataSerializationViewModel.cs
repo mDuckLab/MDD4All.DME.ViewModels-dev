@@ -1,117 +1,59 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Serialization;
 
 namespace MDD4All.DME.ViewModels.DataManager
 {
-    public class DataSerializationViewModel : ObservableObject
+    // Turns objects into text and back. Keeps nothing of what passes through: every method is
+    // handed what it needs and gives the result back, so asking it something never changes what
+    // is currently open. The object itself lives in DataManagerObjectViewModel.
+    public class DataSerializationViewModel
     {
-        public DataSerializationViewModel(Type dataModelRootType)
-        {
-            _selectedType = dataModelRootType;
-        }
-
-
-        private object? _activeObject;
-
-        public object? ActiveObject
-        {
-            get
-            {
-                return _activeObject;
-            }
-            set
-            {
-                if (_activeObject != value)
-                {
-                    _activeObject = value;
-                    OnPropertyChanged(nameof(ActiveObject));
-                }
-            }
-        }
-
-        private Type? _selectedType;
-
-        public Type? SelectedType
-        {
-            get
-            {
-                return _selectedType;
-            }
-            set
-            {
-                if (_selectedType != value)
-                {
-                    _selectedType = value;
-                    OnPropertyChanged(nameof(SelectedType));
-                }
-            }
-        }
-
         public bool ShowXml { get; set; }
 
-        // Set from the corresponding setting before saving, so the written file can carry
-        // its own type and be reopened without picking the matching data model first.
-        public bool IncludeTypeInformation { get; set; } = false;
-
-        // Off writes a dictionary keyed by an object as null instead of the Key/Value form only
-        // this application understands. Costs the content, keeps the file readable elsewhere.
-        public bool WriteComplexDictionaryKeys { get; set; } = true;
-
-        public string ActiveObjectJsonString
+        public object? CreateInstance(Type rootType)
         {
-            get
-            {
-                string result = string.Empty;
+            object? result = Activator.CreateInstance(rootType);
 
-                if (ActiveObject != null && SelectedType != null)
-                {
-                    result = DynamicInvoker.SerializeJson(ActiveObject, IncludeTypeInformation,
-                                                          WriteComplexDictionaryKeys);
-                }
-
-                return result;
-            }
+            return result;
         }
 
-        public string ActiveObjectXmlString
+        // includeTypeInformation writes the type into the file, so it can be reopened without
+        // picking the matching data model first.
+        //
+        // writeComplexDictionaryKeys off writes a dictionary keyed by an object as null instead of
+        // the Key/Value form only this application understands. Costs the content, keeps the file
+        // readable elsewhere.
+        public string ToJson(object rootObject, bool includeTypeInformation, bool writeComplexDictionaryKeys)
         {
-            get
-            {
-                string result = string.Empty;
+            string result = DynamicInvoker.SerializeJson(rootObject, includeTypeInformation,
+                                                         writeComplexDictionaryKeys);
 
-                if (ActiveObject != null && SelectedType != null)
-                {
-                    try
-                    {
-                        result = DynamicInvoker.SerializeXml(ActiveObject);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.WriteLine(exception);
-                    }
-                }
-
-                return result;
-            }
+            return result;
         }
 
-        public void CreateNewInstance()
+        public string ToXml(object rootObject)
         {
-            if (SelectedType != null)
+            string result = string.Empty;
+
+            try
             {
-                // Assigning to the property triggers OnPropertyChanged
-                ActiveObject = Activator.CreateInstance(SelectedType);
+                result = DynamicInvoker.SerializeXml(rootObject);
             }
+            catch (Exception exception)
+            {
+                Debug.WriteLine(exception);
+            }
+
+            return result;
         }
 
-        // Turns JSON text into the active object, or reports why it could not.
+        // Turns JSON text into an object, or reports why it could not.
         // Takes the text, never a file path.
         //
         // verifyRootType means the type is only a guess and has to be held against the file.
         // It is false when the file named its own type - then there is nothing to verify.
-        public LoadResult LoadFromJson(string json, bool verifyRootType)
+        public LoadResult LoadFromJson(string json, Type targetType, bool verifyRootType, out object? loadedObject)
         {
             // Three checks, ordered by how much each one can explain:
             //
@@ -119,10 +61,12 @@ namespace MDD4All.DME.ViewModels.DataManager
             //   names         - this is JSON, but not written from this type
             //   deserializing - something went wrong
             //
-            // Whichever can give the better answer runs first, and the active object stays
-            // untouched until all three have passed. The starting value is a failure, so
-            // success has to be reached rather than assumed.
+            // Whichever can give the better answer runs first. The starting value is a failure,
+            // so success has to be reached rather than assumed, and nothing is handed back until
+            // all three have passed.
             LoadResult result = LoadResult.DeserializationFailed;
+
+            loadedObject = null;
 
             Newtonsoft.Json.Linq.JToken? rawJson = null;
 
@@ -147,12 +91,12 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (verifyRootType && rootObject != null)
                 {
-                    // SelectedType came in through the constructor, and it is either the type read
-                    // from the file's own $type or the model the user currently has selected. Here
-                    // it supplies the names that are allowed to appear.
+                    // The target type is either the type read from the file's own $type or the
+                    // model the user currently has selected. Here it supplies the names that are
+                    // allowed to appear.
                     List<string> knownNames = new List<string>();
 
-                    foreach (PropertyInfo property in SelectedType!.GetProperties())
+                    foreach (PropertyInfo property in targetType.GetProperties())
                     {
                         knownNames.Add(property.Name);
                     }
@@ -192,7 +136,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                     // over rather than the parsed result - that one belongs to this context.
                     try
                     {
-                        object? deserializedJson = DynamicInvoker.DeserializeJson(json, SelectedType!);
+                        object? deserializedJson = DynamicInvoker.DeserializeJson(json, targetType);
 
                         // A file containing just "null" parses fine and deserializes to nothing.
                         if (deserializedJson == null)
@@ -201,7 +145,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                         }
                         else
                         {
-                            ActiveObject = deserializedJson;
+                            loadedObject = deserializedJson;
                             result = LoadResult.Loaded;
                         }
                     }
@@ -216,15 +160,17 @@ namespace MDD4All.DME.ViewModels.DataManager
             return result;
         }
 
-        // Counterpart to ActiveObjectXmlString. No equivalent of the root check exists for XML yet,
-        // so a mismatched file is only noticed when deserializing fails.
-        public LoadResult LoadFromXml(string xml)
+        // Counterpart to ToXml. No equivalent of the root check exists for XML yet, so a
+        // mismatched file is only noticed when deserializing fails.
+        public LoadResult LoadFromXml(string xml, Type targetType, out object? loadedObject)
         {
             LoadResult result = LoadResult.Loaded;
 
+            loadedObject = null;
+
             try
             {
-                XmlSerializer xmlSerializer = new XmlSerializer(SelectedType!);
+                XmlSerializer xmlSerializer = new XmlSerializer(targetType);
 
                 using (StringReader stringReader = new StringReader(xml))
                 {
@@ -236,7 +182,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                     }
                     else
                     {
-                        ActiveObject = deserializedXml;
+                        loadedObject = deserializedXml;
                     }
                 }
             }

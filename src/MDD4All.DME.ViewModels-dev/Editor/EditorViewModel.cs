@@ -9,10 +9,10 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class EditorViewModel : ObservableObject
     {
         #region constructor
-        public EditorViewModel(DataManagerFileViewModel dataFileManager)
+        public EditorViewModel(DataManagerObjectViewModel dataManagerObject)
         {
-            _dataFileManager = dataFileManager;
-            _dataFileManager.PropertyChanged += OnDataFileManagerPropertyChanged;
+            _dataManagerObject = dataManagerObject;
+            _dataManagerObject.PropertyChanged += OnDataManagerObjectPropertyChanged;
 
             // As a lazily-constructed singleton, this can be built after a data file
             // was already loaded (e.g. the switch to the Editor screen itself triggers
@@ -26,7 +26,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private ObjectTreeViewModel? _treeViewModel;
 
-        private DataManagerFileViewModel _dataFileManager;
+        private readonly DataManagerObjectViewModel _dataManagerObject;
 
         public ObjectTreeViewModel? TreeViewModel
         {
@@ -78,9 +78,9 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Event Handlers
-        private void OnDataFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void OnDataManagerObjectPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(DataManagerFileViewModel.DataSerializationViewModel))
+            if (e.PropertyName == nameof(DataManagerObjectViewModel.RootObject))
             {
                 RebuildTree();
             }
@@ -93,12 +93,12 @@ namespace MDD4All.DME.ViewModels.DataManager
                 this.TreeViewModel.PropertyChanged -= this.OnTreePropertyChanged;
             }
 
-            object? activeObject = _dataFileManager.DataSerializationViewModel?.ActiveObject;
-            Type? selectedType = _dataFileManager.DataSerializationViewModel?.SelectedType;
+            object? rootObject = _dataManagerObject.RootObject;
+            Type? rootType = _dataManagerObject.RootType;
 
-            if (activeObject != null || selectedType != null)
+            if (rootObject != null || rootType != null)
             {
-                ObjectTreeViewModel newTree = new ObjectTreeViewModel(activeObject, selectedType);
+                ObjectTreeViewModel newTree = new ObjectTreeViewModel(rootObject, rootType);
                 newTree.PropertyChanged += this.OnTreePropertyChanged;
                 TreeViewModel = newTree;
             }
