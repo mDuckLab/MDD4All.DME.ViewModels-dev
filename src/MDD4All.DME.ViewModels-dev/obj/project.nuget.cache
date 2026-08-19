@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "lUfgLjVG9bc=",
+  "dgSpecHash": "dZEZ+NLyWcU=",
   "success": true,
-  "projectFilePath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
+  "projectFilePath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\schuesslmo\\.nuget\\packages\\communitytoolkit.mvvm\\8.0.0\\communitytoolkit.mvvm.8.0.0.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.aspnetcore.authorization\\6.0.25\\microsoft.aspnetcore.authorization.6.0.25.nupkg.sha512",

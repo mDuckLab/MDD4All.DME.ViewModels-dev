@@ -36,7 +36,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private void InitializeCommands()
         {
-            this.NewDataFileCommand = new RelayCommand<Type>(this.ExecuteNewDataFile);
+            this.NewDataFileCommand = new RelayCommand(this.ExecuteNewDataFile);
             this.OpenDataFileCommand = new RelayCommand(this.ExecuteOpenDataFile);
             this.SaveDataFileCommand = new RelayCommand(this.ExecuteSaveDataFile);
             this.SaveDataFileAsCommand = new RelayCommand(this.ExecuteSaveDataFileAs);
@@ -67,6 +67,26 @@ namespace MDD4All.DME.ViewModels.DataManager
         // The path lives here, not with the object - that one only ever sees content. Empty
         // for an object that was created and never saved, which is what makes Save ask first.
         public string CurrentFilePath { get; private set; } = "";
+
+        private Type? _selectedDataModel;
+
+        // Which data model New builds, and what an opened file is read as when it does not name
+        // a type itself. Follows along when a file does name one.
+        public Type? SelectedDataModel
+        {
+            get
+            {
+                return _selectedDataModel;
+            }
+            set
+            {
+                if (_selectedDataModel != value)
+                {
+                    _selectedDataModel = value;
+                    this.OnPropertyChanged(nameof(SelectedDataModel));
+                }
+            }
+        }
 
 
         #endregion
@@ -147,8 +167,10 @@ namespace MDD4All.DME.ViewModels.DataManager
         // Creates an empty instance of the given data model. Nothing is written yet and no
         // dialog appears - a new object lives in memory until the first save, which is when a
         // file name is asked for.
-        private void ExecuteNewDataFile(Type? dataModelRootType)
+        private void ExecuteNewDataFile()
         {
+            Type? dataModelRootType = this.SelectedDataModel;
+
             if (dataModelRootType != null)
             {
                 // A plain Activator.CreateInstance - no serialization involved, which is why this
@@ -196,20 +218,26 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                     if (type == null)
                     {
-                        // Nothing in the file, so the only candidate left is whatever is open.
-                        type = _dataManagerObject.RootType;
+                        // Nothing in the file, so it is read as whatever is selected.
+                        type = this.SelectedDataModel;
                     }
 
                     if (type == null)
                     {
-                        this.LoadErrorMessage = "The file does not name a data model, and nothing is open to compare it against.";
+                        this.LoadErrorMessage = "The file does not name a data model, and none is selected to read it as.";
                     }
                     else
                     {
                         // Reads the file and builds the object from it. The type is held against
                         // the file's contents only when it was guessed - one the file named
                         // itself needs no checking.
-                        this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
+                        bool loaded = this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
+
+                        // The file decides which model is selected, not the other way round.
+                        if (loaded)
+                        {
+                            this.SelectedDataModel = type;
+                        }
                     }
                 }
             }, null);

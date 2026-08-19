@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65b5fa90e93786a20899b997b8bd38eb735603c4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+226bf266464e9c64ddd285497f38125c71194edf")]
 [assembly: System.Reflection.AssemblyProductAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
