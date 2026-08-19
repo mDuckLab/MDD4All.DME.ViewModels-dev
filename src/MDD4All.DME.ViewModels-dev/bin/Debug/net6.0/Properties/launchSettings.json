@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MDD4All.UI.BlazorComponents-dev": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

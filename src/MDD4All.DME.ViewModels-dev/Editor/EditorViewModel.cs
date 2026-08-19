@@ -91,39 +91,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        private bool _showRawData = false;
 
-        public bool ShowRawData
-        {
-            get
-            {
-                return _showRawData;
-            }
-
-            set
-            {
-                _showRawData = value;
-                OnPropertyChanged(nameof(ShowRawData));
-            }
-        }
-
-        private bool _showXml = false;
-
-        // Which of the two formats the raw data view shows. Purely a question of what is on
-        // screen - the serializer produces both either way.
-        public bool ShowXml
-        {
-            get
-            {
-                return _showXml;
-            }
-
-            set
-            {
-                _showXml = value;
-                OnPropertyChanged(nameof(ShowXml));
-            }
-        }
 
         #endregion
 

@@ -97,20 +97,6 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        public string XmlString
-        {
-            get
-            {
-                string result = string.Empty;
-
-                if (_dataManagerObject.RootObject != null)
-                {
-                    result = _dataSerializer.ToXml(_dataManagerObject.RootObject);
-                }
-
-                return result;
-            }
-        }
         #endregion
 
         #region UI
@@ -230,7 +216,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 bool saveLocationChosen = _fileSaver.ShowFileSaveDialog(out fileName,
                                                                         initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
                                                                         title: "New data file...",
-                                                                        filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
+                                                                        filter: "JSON file (*.json)|*.json|All files (*.*)|*.*",
                                                                         defaultFileExtension: "json");
 
                 if (saveLocationChosen)
@@ -319,7 +305,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 string filename = "";
                 bool fileChosen = _fileLoader.ShowOpenFileDialog(out filename,
                                                                  initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
-                                                                 filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*",
+                                                                 filter: "JSON file (*.json)|*.json|All files (*.*)|*.*",
                                                                  title: "Open data file...",
                                                                  defaultFileExtension: "json");
 
@@ -404,7 +390,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                 bool saveLocationChosen = _fileSaver.ShowFileSaveDialog(out fileName,
                                                                         initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
                                                                         title: "Save data file as...",
-                                                                        filter: "JSON file (*.json)|*.json|XML file (*.xml)|*.xml|All files (*.*)|*.*");
+                                                                        filter: "JSON file (*.json)|*.json|All files (*.*)|*.*");
 
                 if (saveLocationChosen)
                 {
