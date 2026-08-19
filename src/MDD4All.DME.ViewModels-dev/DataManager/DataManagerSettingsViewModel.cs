@@ -68,33 +68,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
-        public bool WriteComplexDictionaryKeys
-        {
-            get
-            {
-                return _configuration.WriteComplexDictionaryKeys;
-            }
-            set
-            {
-                _configuration.WriteComplexDictionaryKeys = value;
-                this.Persist();
-                this.OnPropertyChanged(nameof(WriteComplexDictionaryKeys));
-            }
-        }
 
-        public bool ConfirmComplexKeyLossWithDialog
-        {
-            get
-            {
-                return _configuration.ConfirmComplexKeyLossWithDialog;
-            }
-            set
-            {
-                _configuration.ConfirmComplexKeyLossWithDialog = value;
-                this.Persist();
-                this.OnPropertyChanged(nameof(ConfirmComplexKeyLossWithDialog));
-            }
-        }
         #endregion
 
         #region Helpers

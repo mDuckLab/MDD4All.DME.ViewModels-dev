@@ -124,6 +124,13 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         #endregion
 
+        // Takes the complaint off the bar. The next load overwrites or clears it anyway, this is
+        // just so it does not have to sit there until then.
+        public void DismissLoadError()
+        {
+            this.LoadErrorMessage = "";
+        }
+
         #endregion
 
         #region Commands
