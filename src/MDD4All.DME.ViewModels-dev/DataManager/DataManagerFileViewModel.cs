@@ -68,6 +68,22 @@ namespace MDD4All.DME.ViewModels.DataManager
         // for an object that was created and never saved, which is what makes Save ask first.
         public string CurrentFilePath { get; private set; } = "";
 
+        // What the object looked like as text when it was last read or written. Compared against
+        // the current state to tell whether anything was edited since - a flag would have to be
+        // set from every place that can change something, and one forgotten place means a lost
+        // file. Only ever computed when New or Open is pressed, so the cost does not matter.
+        private string _savedState = "";
+
+        // What to do once the unsaved-changes question has been answered.
+        private PendingAction _pendingAction = PendingAction.None;
+
+        private enum PendingAction
+        {
+            None,
+            New,
+            Open
+        }
+
         private Type? _selectedDataModel;
 
         // Which data model New builds, and what an opened file is read as when it does not name
@@ -122,6 +138,26 @@ namespace MDD4All.DME.ViewModels.DataManager
             }
         }
 
+        private bool _showUnsavedChangesWarning;
+
+        // Watched by MainViewModel, which puts the dialog on screen. The answer comes back
+        // through AnswerUnsavedChanges.
+        public bool ShowUnsavedChangesWarning
+        {
+            get
+            {
+                return _showUnsavedChangesWarning;
+            }
+            private set
+            {
+                if (_showUnsavedChangesWarning != value)
+                {
+                    _showUnsavedChangesWarning = value;
+                    this.OnPropertyChanged(nameof(ShowUnsavedChangesWarning));
+                }
+            }
+        }
+
         private string _loadErrorMessage = "";
 
         // Why opening a file failed. Shown in the status bar above, and cleared by the next
@@ -143,6 +179,80 @@ namespace MDD4All.DME.ViewModels.DataManager
 
 
         #endregion
+
+        // True when the caller should stop and wait for an answer. The command that was
+        // interrupted is remembered and run again from AnswerUnsavedChanges.
+        private bool AskBeforeDiscarding(PendingAction action)
+        {
+            bool result = false;
+
+            if (this.HasUnsavedChanges())
+            {
+                _pendingAction = action;
+                this.ShowUnsavedChangesWarning = true;
+
+                result = true;
+            }
+
+            return result;
+        }
+
+        // The answer to that question. Cancelling leaves everything as it was.
+        public void AnswerUnsavedChanges(bool discardChanges)
+        {
+            PendingAction action = _pendingAction;
+
+            _pendingAction = PendingAction.None;
+            this.ShowUnsavedChangesWarning = false;
+
+            if (discardChanges)
+            {
+                // Cleared first, so the command below does not ask the same question again.
+                _savedState = this.CurrentState();
+
+                if (action == PendingAction.New)
+                {
+                    this.ExecuteNewDataFile();
+                }
+                else if (action == PendingAction.Open)
+                {
+                    this.ExecuteOpenDataFile();
+                }
+            }
+        }
+
+        private bool HasUnsavedChanges()
+        {
+            bool result = false;
+
+            if (_dataManagerObject.HasContent)
+            {
+                result = (this.CurrentState() != _savedState);
+            }
+
+            return result;
+        }
+
+        private void RememberCurrentState()
+        {
+            _savedState = this.CurrentState();
+        }
+
+        // The object as text. Only ever used to compare against the last remembered state, so
+        // the settings it is written with do not matter as long as they are always the same.
+        private string CurrentState()
+        {
+            string result = "";
+
+            if (_dataManagerObject.RootObject != null)
+            {
+                result = _dataSerializer.ToJson(_dataManagerObject.RootObject,
+                                                includeTypeInformation: true,
+                                                writeComplexDictionaryKeys: true);
+            }
+
+            return result;
+        }
 
         // Takes the complaint off the bar. The next load overwrites or clears it anyway, this is
         // just so it does not have to sit there until then.
@@ -169,6 +279,11 @@ namespace MDD4All.DME.ViewModels.DataManager
         // file name is asked for.
         private void ExecuteNewDataFile()
         {
+            if (this.AskBeforeDiscarding(PendingAction.New))
+            {
+                return;
+            }
+
             Type? dataModelRootType = this.SelectedDataModel;
 
             if (dataModelRootType != null)
@@ -182,6 +297,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 _dataManagerObject.SetObject(dataModelRootType, newInstance);
 
+                // A fresh object counts as unchanged until the first edit, not as unsaved work.
+                this.RememberCurrentState();
+
                 this.OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -190,6 +308,11 @@ namespace MDD4All.DME.ViewModels.DataManager
         // name stored in the file back into a real type.
         private void ExecuteOpenDataFile()
         {
+            if (this.AskBeforeDiscarding(PendingAction.Open))
+            {
+                return;
+            }
+
             // Queued for the same reason as when creating a file - the dialog blocks.
             SynchronizationContext.Current?.Post((_) =>
             {
@@ -300,6 +423,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 // from here, whether it was opened, created or replaced.
                 _dataManagerObject.SetObject(dataModelRootType, loadedObject);
 
+                this.RememberCurrentState();
+
                 this.OnPropertyChanged(nameof(StatusText));
 
                 loaded = true;
@@ -325,6 +450,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                                     // setting this branch does not carry.
                                     writeComplexDictionaryKeys: true);
 
+
+            this.RememberCurrentState();
 
             if (fileInfo.DirectoryName != null)
             {
