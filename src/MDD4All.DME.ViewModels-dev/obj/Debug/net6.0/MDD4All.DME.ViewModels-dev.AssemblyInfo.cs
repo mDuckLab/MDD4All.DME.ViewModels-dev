@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc000f22b67af00f493dbfaa417e79cd21a8b231")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+564423b36bac1df1cf11732e3ec4c7cb0e27e672")]
 [assembly: System.Reflection.AssemblyProductAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MDD4All.DME.ViewModels")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
