@@ -17,17 +17,6 @@ namespace MDD4All.DME.ViewModels.Editor.Settings
             _settings = _configurationReaderWriter.GetConfiguration() ?? new EditorAppearanceSettings();
         }
 
-        public bool TintEnabled
-        {
-            get
-            {
-                return _settings.TintEnabled;
-            }
-            set
-            {
-                SetAndStore(value, _settings.TintEnabled, v => _settings.TintEnabled = v);
-            }
-        }
 
         public int MaxDepth
         {
@@ -53,17 +42,6 @@ namespace MDD4All.DME.ViewModels.Editor.Settings
             }
         }
 
-        public bool ShowIndexNumbers
-        {
-            get
-            {
-                return _settings.ShowIndexNumbers;
-            }
-            set
-            {
-                SetAndStore(value, _settings.ShowIndexNumbers, v => _settings.ShowIndexNumbers = v);
-            }
-        }
 
         public bool ShowReadOnlyBadges
         {

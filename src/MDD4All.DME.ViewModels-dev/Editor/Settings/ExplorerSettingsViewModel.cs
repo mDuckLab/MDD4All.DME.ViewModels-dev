@@ -23,11 +23,6 @@ namespace MDD4All.DME.ViewModels.Editor.Settings
             set => SetAndStore(value, _settings.ShowIcons, v => _settings.ShowIcons = v);
         }
 
-        public bool ShowIndexNumbers
-        {
-            get => _settings.ShowIndexNumbers;
-            set => SetAndStore(value, _settings.ShowIndexNumbers, v => _settings.ShowIndexNumbers = v);
-        }
 
         public bool ShowTypeSymbols
         {

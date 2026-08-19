@@ -1,4 +1,5 @@
 using MDD4All.DME.DataAccess.DataFiles;
+using MDD4All.DME.DataAccess.DataModels;
 using MDD4All.DME.DataAccess.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,30 +18,26 @@ namespace MDD4All.DME.ViewModels.DataManager
         public DataManagerFileViewModel(IFileLoader fileLoader,
                                         IFileSaver fileSaver,
                                         DataManagerSettingsViewModel dataManagerSettings,
-                                        DataManagerModelViewModel dataManagerModel,
+                                        DataModelCatalog dataModelCatalog,
                                         DataManagerObjectViewModel dataManagerObject,
                                         DataFileProvider dataFileProvider,
-                                        DataSerializer dataSerializer,
-                                        DictionaryKeyAnalyzer dictionaryKeyAnalyzer)
+                                        DataSerializer dataSerializer)
         {
             _fileLoader = fileLoader;
             _fileSaver = fileSaver;
             _dataManagerSettings = dataManagerSettings;
-            _dataManagerModel = dataManagerModel;
+            _dataModelCatalog = dataModelCatalog;
             _dataManagerObject = dataManagerObject;
             _dataFileProvider = dataFileProvider;
             _dataSerializer = dataSerializer;
-            _dictionaryKeyAnalyzer = dictionaryKeyAnalyzer;
 
             this.InitializeCommands();
         }
 
         private void InitializeCommands()
         {
-            this.NewDataFileCommand = new RelayCommand(this.ExecuteNewDataFile);
-            this.OpenRecentDataFileCommand = new RelayCommand<int>(this.ExecuteOpenRecentDataFile);
+            this.NewDataFileCommand = new RelayCommand<Type>(this.ExecuteNewDataFile);
             this.OpenDataFileCommand = new RelayCommand(this.ExecuteOpenDataFile);
-            this.ConfirmOpenDataFileCommand = new RelayCommand(this.ExecuteConfirmOpenDataFile);
             this.SaveDataFileCommand = new RelayCommand(this.ExecuteSaveDataFile);
             this.SaveDataFileAsCommand = new RelayCommand(this.ExecuteSaveDataFileAs);
         }
@@ -52,9 +49,9 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         private readonly DataManagerSettingsViewModel _dataManagerSettings;
 
-        // Asked for the type behind a stored descriptor and for switching the active model,
-        // so that stays in one place instead of being repeated per file command.
-        private readonly DataManagerModelViewModel _dataManagerModel;
+        // The data models compiled into the solution - asked which ones exist and what a type
+        // name out of a file refers to.
+        private readonly DataModelCatalog _dataModelCatalog;
 
         // Where the loaded object lives. This class is the only one that fills it.
         private readonly DataManagerObjectViewModel _dataManagerObject;
@@ -62,62 +59,53 @@ namespace MDD4All.DME.ViewModels.DataManager
         // Path to object and back. Everything that touches the disk goes through here.
         private readonly DataFileProvider _dataFileProvider;
 
-        // Object to text, for the raw data view. Writing goes through the provider above.
+        // Only asked to build an empty instance - writing goes through the provider above.
         private readonly DataSerializer _dataSerializer;
 
-        // Asked before every save whether anything would be dropped.
-        private readonly DictionaryKeyAnalyzer _dictionaryKeyAnalyzer;
 
         #region Logic
-        // The path lives here, not with the object - that one only ever sees content.
-        // It only ever names a file that was really read or written, which is why the pending one
-        // below waits separately instead of moving this one early.
+        // The path lives here, not with the object - that one only ever sees content. Empty
+        // for an object that was created and never saved, which is what makes Save ask first.
         public string CurrentFilePath { get; private set; } = "";
 
-        // Where a confirmed save will write to. Set while the warning below is on screen, because
-        // the command returns before the answer arrives and Save As must not ask for a path twice.
-        private string _pendingSavePath = "";
-
-        // The open object as text. The same string goes to disk and onto the screen, and the
-        // settings are read here rather than kept, so changing one takes effect right away.
-        public string JsonString
-        {
-            get
-            {
-                string result = string.Empty;
-
-                if (_dataManagerObject.RootObject != null)
-                {
-                    result = _dataSerializer.ToJson(_dataManagerObject.RootObject,
-                                                       _dataManagerSettings.SaveTypeInformation,
-                                                       _dataManagerSettings.WriteComplexDictionaryKeys);
-                }
-
-                return result;
-            }
-        }
 
         #endregion
 
         #region UI
+        // The status bar is the only place left that talks to the user, so a failed load is
+        // reported here rather than in a bar of its own.
         public string StatusText
         {
             get
             {
                 string result = "";
-                if (_dataManagerObject.HasContent)
+
+                if (this.LoadErrorMessage.Length > 0)
                 {
-                    result = "Filename: " + this.CurrentFilePath;
-                    result += " ● Data Model: " + _dataManagerSettings.CurrentDataModel!.FullTypeName;
+                    result = this.LoadErrorMessage;
                 }
+                else if (_dataManagerObject.HasContent)
+                {
+                    if (this.CurrentFilePath.Length > 0)
+                    {
+                        result = "File: " + this.CurrentFilePath;
+                    }
+                    else
+                    {
+                        result = "File: not saved yet";
+                    }
+
+                    result += " ● Data Model: " + _dataManagerObject.RootType!.Name;
+                }
+
                 return result;
             }
         }
 
         private string _loadErrorMessage = "";
 
-        // Why opening a file failed. MainViewModel watches this and puts it in front of the user -
-        // the status bar cannot, because it only exists once the editor is on screen.
+        // Why opening a file failed. Shown in the status bar above, and cleared by the next
+        // load that works.
         public string LoadErrorMessage
         {
             get
@@ -128,60 +116,12 @@ namespace MDD4All.DME.ViewModels.DataManager
             {
                 _loadErrorMessage = value;
                 this.OnPropertyChanged(nameof(LoadErrorMessage));
+                this.OnPropertyChanged(nameof(StatusText));
             }
         }
 
-        private bool _showComplexKeyWarning;
 
-        // Kept apart from LoadErrorMessage: that one reports a file that could not be opened and
-        // clears itself, this one blocks until it is answered.
-        public bool ShowComplexKeyWarning
-        {
-            get
-            {
-                return _showComplexKeyWarning;
-            }
-            private set
-            {
-                if (_showComplexKeyWarning != value)
-                {
-                    _showComplexKeyWarning = value;
-                    this.OnPropertyChanged(nameof(ShowComplexKeyWarning));
-                }
-            }
-        }
 
-        private string _complexKeyWarningMessage = "";
-
-        public string ComplexKeyWarningMessage
-        {
-            get
-            {
-                return _complexKeyWarningMessage;
-            }
-            private set
-            {
-                _complexKeyWarningMessage = value;
-                this.OnPropertyChanged(nameof(ComplexKeyWarningMessage));
-            }
-        }
-
-        private string _saveWarningMessage = "";
-
-        // What a finished save had to leave out. The counterpart to LoadErrorMessage, kept apart
-        // from it so neither one clears the other.
-        public string SaveWarningMessage
-        {
-            get
-            {
-                return _saveWarningMessage;
-            }
-            private set
-            {
-                _saveWarningMessage = value;
-                this.OnPropertyChanged(nameof(SaveWarningMessage));
-            }
-        }
         #endregion
 
         #endregion
@@ -191,112 +131,34 @@ namespace MDD4All.DME.ViewModels.DataManager
 
         public ICommand OpenDataFileCommand { get; private set; } = null!;
 
-        public ICommand ConfirmOpenDataFileCommand { get; private set; } = null!;
-
-        public ICommand OpenRecentDataFileCommand { get; private set; } = null!;
-
         public ICommand SaveDataFileCommand { get; private set; } = null!;
 
         public ICommand SaveDataFileAsCommand { get; private set; } = null!;
         #endregion
 
         #region Command Implementations
-        // Creates an empty instance of the selected data model and writes it to a new file.
-        // The simple direction: the type is already known, so nothing has to be resolved from text.
-        private void ExecuteNewDataFile()
+        // Creates an empty instance of the given data model. Nothing is written yet and no
+        // dialog appears - a new object lives in memory until the first save, which is when a
+        // file name is asked for.
+        private void ExecuteNewDataFile(Type? dataModelRootType)
         {
-            // The dialog blocks until the user answers. Running it directly would block the thread
-            // Blazor is currently rendering on, so it is queued and this call returns right away.
-            SynchronizationContext.Current?.Post((_) =>
+            if (dataModelRootType != null)
             {
-                string fileName = "";
+                // A plain Activator.CreateInstance - no serialization involved, which is why this
+                // path needs none of the machinery that opening a file does.
+                object? newInstance = _dataSerializer.CreateInstance(dataModelRootType);
 
-                // Only asks where to save - writing happens further down. The overwrite prompt
-                // is part of this dialog, so a true result means the user already agreed to it.
-                bool saveLocationChosen = _fileSaver.ShowFileSaveDialog(out fileName,
-                                                                        initialDirectory: _dataManagerSettings.LastUsedDataFilePath,
-                                                                        title: "New data file...",
-                                                                        filter: "JSON file (*.json)|*.json|All files (*.*)|*.*",
-                                                                        defaultFileExtension: "json");
+                // No file behind it yet. Save falls back to Save As while this is empty.
+                this.CurrentFilePath = "";
 
-                if (saveLocationChosen)
-                {
-                    // Only a DLL path and a type name - what survived from picking the data model.
-                    DataModelDescriptor? currentType = _dataManagerSettings.CurrentDataModel;
+                _dataManagerObject.SetObject(dataModelRootType, newInstance);
 
-                    if (currentType != null)
-                    {
-                        // Turns those two strings back into a usable type, loading the DLL again.
-                        Type? type = _dataManagerModel.ResolveDataModelType(currentType);
-
-                        if (type != null)
-                        {
-                            this.CurrentFilePath = fileName;
-
-                            // A plain Activator.CreateInstance - no serialization involved, which is
-                            // why this path needs none of the machinery that opening a file does.
-                            object? newInstance = _dataSerializer.CreateInstance(type);
-
-                            _dataManagerObject.SetObject(type, newInstance);
-
-                            // Written out immediately, so a new file exists on disk even if the user
-                            // never edits anything. Straight to the file rather than through the
-                            // save command: the warning about dropped entries belongs to a save the
-                            // user asked for, not to a file that is only just being created.
-                            this.WriteDataFile(fileName);
-
-                            DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
-                            {
-                                FilePath = fileName,
-                                DataModelDescription = new DataModelDescriptor
-                                {
-                                    DllPath = _dataManagerSettings.CurrentDataModel!.DllPath,
-                                    FullTypeName = _dataManagerSettings.CurrentDataModel.FullTypeName
-                                }
-                            };
-
-                            // Remembers file and model together, so reopening it later does not
-                            // depend on which model happens to be selected then.
-                            _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
-                        }
-                    }
-
-                }
-            }, null);
-        }
-
-        private void ExecuteOpenRecentDataFile(int index)
-        {
-            DataFileDescriptor descriptor = _dataManagerSettings.RecentDataFiles[index];
-
-            if (descriptor != null)
-            {
-                Type? type = _dataManagerModel.ResolveDataModelType(descriptor.DataModelDescription);
-
-                if (type != null)
-                {
-                    // The model was stored together with the file, so there is nothing to verify.
-                    bool loaded = this.LoadDataFile(descriptor.FilePath, type, verifyRootType: false);
-
-                    // Same reasoning as when opening by dialog: a file that will not open should
-                    // neither switch the active model nor reorder the recent list.
-                    if (loaded)
-                    {
-                        _dataManagerSettings.SetRecentDataFileToTop(index);
-
-                        _dataManagerModel.ActivateDataModel(descriptor.DataModelDescription);
-                    }
-                }
-                else
-                {
-                    this.LoadErrorMessage = "The type \"" + descriptor.DataModelDescription.FullTypeName
-                                            + "\" was not found in the data model DLL.";
-                }
+                this.OnPropertyChanged(nameof(StatusText));
             }
         }
 
         // Rebuilds an object graph from a file. Unlike creating one, this has to turn the type
-        // names stored in the file back into real types, which is where the load context matters.
+        // name stored in the file back into a real type.
         private void ExecuteOpenDataFile()
         {
             // Queued for the same reason as when creating a file - the dialog blocks.
@@ -311,74 +173,52 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (fileChosen)
                 {
-                    // Stays empty unless the file was saved with the type information setting on.
-                    DataModelDescriptor? descriptorFromFile = _dataManagerModel.FindDataModelForFile(filename);
+                    // Empty unless the file was saved with the type information setting on.
+                    string? typeNameFromFile = _dataFileProvider.ReadTypeName(filename);
 
-                    bool typeFoundInFile = descriptorFromFile != null;
+                    bool typeFoundInFile = false;
 
-                    // Which source it came from decides whether it can be trusted further down.
-                    DataModelDescriptor? descriptor;
+                    Type? type = null;
 
-                    if (typeFoundInFile)
+                    if (typeNameFromFile != null)
                     {
-                        descriptor = descriptorFromFile;
+                        type = _dataModelCatalog.ResolveTypeName(typeNameFromFile);
+
+                        typeFoundInFile = (type != null);
+                    }
+
+                    if (type == null)
+                    {
+                        // Nothing in the file, so the only candidate left is whatever is open.
+                        type = _dataManagerObject.RootType;
+                    }
+
+                    if (type == null)
+                    {
+                        this.LoadErrorMessage = "The file does not name a data model, and nothing is open to compare it against.";
                     }
                     else
                     {
-                        descriptor = _dataManagerSettings.CurrentDataModel;
-                    }
-
-                    if (descriptor == null)
-                    {
-                        // Neither source produced anything - a fresh installation where no data
-                        // model was ever picked, opening a file that does not name one either.
-                        this.LoadErrorMessage = "No data model is selected, and the file does not name one either.";
-                    }
-                    else
-                    {
-                        Type? type = _dataManagerModel.ResolveDataModelType(descriptor);
-
-                        if (type == null)
-                        {
-                            // The DLL is there but no longer holds that type - renamed or replaced.
-                            this.LoadErrorMessage = "The type \"" + descriptor.FullTypeName + "\" was not found in the data model DLL.";
-                        }
-                        else
-                        {
-                            // Reads the file and builds the object from it. The type is held against
-                            // the file's contents only when it was guessed - one the file named
-                            // itself needs no checking.
-                            bool loaded = this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
-
-                            // Both write to the configuration file, so a file that would not open
-                            // must not switch the model or take the top spot in the recent list.
-                            if (loaded)
-                            {
-                                // The file decides which model is active, not the other way round.
-                                _dataManagerModel.ActivateDataModel(descriptor);
-
-                                DataFileDescriptor dataFileDescriptor = new DataFileDescriptor
-                                {
-                                    DataModelDescription = descriptor,
-                                    FilePath = filename
-                                };
-
-                                _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
-                            }
-                        }
+                        // Reads the file and builds the object from it. The type is held against
+                        // the file's contents only when it was guessed - one the file named
+                        // itself needs no checking.
+                        this.LoadDataFile(filename, type, verifyRootType: !typeFoundInFile);
                     }
                 }
             }, null);
         }
 
-        private void ExecuteConfirmOpenDataFile()
-        {
-            throw new NotImplementedException();
-        }
-
         private void ExecuteSaveDataFile()
         {
-            this.SaveOrAskFirst(this.CurrentFilePath);
+            // A newly created object has no file yet, so the first save has to ask for one.
+            if (this.CurrentFilePath.Length == 0)
+            {
+                this.ExecuteSaveDataFileAs();
+            }
+            else
+            {
+                this.WriteDataFile(this.CurrentFilePath);
+            }
         }
 
         private void ExecuteSaveDataFileAs()
@@ -394,7 +234,7 @@ namespace MDD4All.DME.ViewModels.DataManager
 
                 if (saveLocationChosen)
                 {
-                    this.SaveOrAskFirst(fileName);
+                    this.WriteDataFile(fileName);
                 }
 
             }, null);
@@ -437,62 +277,7 @@ namespace MDD4All.DME.ViewModels.DataManager
             return loaded;
         }
 
-        // Saving with complex dictionary keys turned off drops those entries. Losing part of an
-        // object graph is not something to mention in passing, so nothing is written until the
-        // user has answered - and the affected properties are named, because "some data will be
-        // lost" is not something anyone can act on.
-        private void SaveOrAskFirst(string filePath)
-        {
-            string[] affected = Array.Empty<string>();
-
-            if (!_dataManagerSettings.WriteComplexDictionaryKeys)
-            {
-                affected = _dictionaryKeyAnalyzer.FindDictionariesWithComplexKey(_dataManagerObject.RootType);
-            }
-
-            if (affected.Length == 0)
-            {
-                this.WriteDataFile(filePath);
-            }
-            else if (_dataManagerSettings.ConfirmComplexKeyLossWithDialog)
-            {
-                // Kept until the answer arrives. Save As has already asked for the path by now
-                // and must not open its file dialog a second time.
-                _pendingSavePath = filePath;
-
-                this.ComplexKeyWarningMessage = "These entries will be dropped when saving, because complex "
-                                                + "dictionary keys are switched off: "
-                                                + string.Join(", ", affected) + ".";
-
-                this.ShowComplexKeyWarning = true;
-            }
-            else
-            {
-                // The other setting: write first, report afterwards. Nothing left to answer, so
-                // the wording states what happened instead of what is about to.
-                this.WriteDataFile(filePath);
-
-                this.SaveWarningMessage = "These entries were dropped when saving, because complex "
-                                          + "dictionary keys are switched off: "
-                                          + string.Join(", ", affected) + ".";
-            }
-        }
-
-        // The answer to the warning above. Cancelling leaves the file on disk untouched.
-        public void AnswerComplexKeyWarning(bool writeAnyway)
-        {
-            this.ShowComplexKeyWarning = false;
-
-            if (writeAnyway)
-            {
-                this.WriteDataFile(_pendingSavePath);
-            }
-
-            _pendingSavePath = "";
-        }
-
-        // The one place a data file is written. Both save commands end up here, and so does the
-        // warning dialog once it has been confirmed.
+        // The one place a data file is written. Both save commands end up here.
         private void WriteDataFile(string filePath)
         {
             FileInfo fileInfo = new FileInfo(filePath);
@@ -501,15 +286,10 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             _dataFileProvider.Write(filePath, _dataManagerObject.RootObject!,
                                     _dataManagerSettings.SaveTypeInformation,
-                                    _dataManagerSettings.WriteComplexDictionaryKeys);
+                                    // Always written in the Key/Value form - dropping them was a
+                                    // setting this branch does not carry.
+                                    writeComplexDictionaryKeys: true);
 
-            DataFileDescriptor dataFileDescriptor = new DataFileDescriptor()
-            {
-                DataModelDescription = _dataManagerSettings.CurrentDataModel!,
-                FilePath = filePath
-            };
-
-            _dataManagerSettings.AddNewRecentDataFile(dataFileDescriptor);
 
             if (fileInfo.DirectoryName != null)
             {

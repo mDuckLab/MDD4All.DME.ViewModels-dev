@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "o1+hyvit6V4=",
+  "dgSpecHash": "FcSZRHTjbMk=",
   "success": true,
-  "projectFilePath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
+  "projectFilePath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\schuesslmo\\.nuget\\packages\\communitytoolkit.mvvm\\8.0.0\\communitytoolkit.mvvm.8.0.0.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.aspnetcore.authorization\\6.0.25\\microsoft.aspnetcore.authorization.6.0.25.nupkg.sha512",
@@ -13,7 +13,6 @@
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.aspnetcore.metadata\\6.0.25\\microsoft.aspnetcore.metadata.6.0.25.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\6.0.1\\microsoft.extensions.dependencyinjection.6.0.1.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\6.0.0\\microsoft.extensions.dependencyinjection.abstractions.6.0.0.nupkg.sha512",
-    "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.localization.abstractions\\6.0.8\\microsoft.extensions.localization.abstractions.6.0.8.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\6.0.4\\microsoft.extensions.logging.abstractions.6.0.4.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.options\\6.0.0\\microsoft.extensions.options.6.0.0.nupkg.sha512",
     "C:\\Users\\schuesslmo\\.nuget\\packages\\microsoft.extensions.primitives\\6.0.0\\microsoft.extensions.primitives.6.0.0.nupkg.sha512",

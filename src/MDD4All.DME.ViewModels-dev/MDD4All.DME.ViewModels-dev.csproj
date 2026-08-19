@@ -20,8 +20,7 @@
     <ProjectReference Include="..\..\..\MDD4All.UI.DataModels\src\MDD4All.UI.DataModels\MDD4All.UI.DataModels-dev.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.Configuration\src\MDD4All.Configuration\MDD4All.Configuration-dev.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.FileAccess.Contracts\src\MDD4All.FileAccess.Contracts\MDD4All.FileAccess.Contracts-dev.csproj" />
-    <ProjectReference Include="..\..\..\MDD4All.AssemblyLoading.Contracts\src\MDD4All.AssemblyLoading.Contracts\MDD4All.AssemblyLoading.Contracts-dev.csproj" />
-    <ProjectReference Include="..\..\..\MDD4All.DME.AssemblyTree\src\MDD4All.DME.AssemblyTree\MDD4All.DME.AssemblyTree-dev.csproj" />
+    <ProjectReference Include="..\..\..\MDD4All.Localization\src\MDD4All.Localization\MDD4All.Localization-dev.csproj" />
     <ProjectReference Include="..\..\..\MDD4All.DME.DataAccess\MDD4All.DME.DataAccess.csproj" />
   </ItemGroup>
 

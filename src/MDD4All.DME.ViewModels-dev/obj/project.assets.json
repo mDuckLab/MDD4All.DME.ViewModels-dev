@@ -144,19 +144,6 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
-      "Microsoft.Extensions.Localization.Abstractions/6.0.8": {
-        "type": "package",
-        "compile": {
-          "lib/net6.0/Microsoft.Extensions.Localization.Abstractions.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net6.0/Microsoft.Extensions.Localization.Abstractions.dll": {
-            "related": ".xml"
-          }
-        }
-      },
       "Microsoft.Extensions.Logging.Abstractions/6.0.4": {
         "type": "package",
         "compile": {
@@ -280,16 +267,6 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
-      "MDD4All.AssemblyLoading.Contracts/1.0.0": {
-        "type": "project",
-        "framework": ".NETStandard,Version=v2.0",
-        "compile": {
-          "bin/placeholder/MDD4All.AssemblyLoading.Contracts.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/MDD4All.AssemblyLoading.Contracts.dll": {}
-        }
-      },
       "MDD4All.Configuration/1.0.0": {
         "type": "project",
         "framework": ".NETStandard,Version=v2.0",
@@ -303,24 +280,6 @@
         "runtime": {
           "bin/placeholder/MDD4All.Configuration.dll": {}
         }
-      },
-      "MDD4All.DME.AssemblyTree/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v6.0",
-        "dependencies": {
-          "MDD4All.AssemblyLoading.Contracts": "1.0.0",
-          "MDD4All.UI.BlazorComponents": "1.0.0",
-          "MDD4All.UI.DataModels": "1.0.0"
-        },
-        "compile": {
-          "bin/placeholder/MDD4All.DME.AssemblyTree.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/MDD4All.DME.AssemblyTree.dll": {}
-        },
-        "frameworkReferences": [
-          "Microsoft.AspNetCore.App"
-        ]
       },
       "MDD4All.DME.DataAccess/1.0.0": {
         "type": "project",
@@ -364,22 +323,6 @@
         },
         "runtime": {
           "bin/placeholder/MDD4All.Reflection.TypeAnalyzer.dll": {}
-        }
-      },
-      "MDD4All.UI.BlazorComponents/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v6.0",
-        "dependencies": {
-          "MDD4All.Localization": "1.0.0",
-          "MDD4All.UI.DataModels": "1.0.0",
-          "Microsoft.AspNetCore.Components.Web": "6.0.25",
-          "Microsoft.Extensions.Localization.Abstractions": "6.0.8"
-        },
-        "compile": {
-          "bin/placeholder/MDD4All.UI.BlazorComponents.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/MDD4All.UI.BlazorComponents.dll": {}
         }
       },
       "MDD4All.UI.DataModels/1.0.0": {
@@ -570,25 +513,6 @@
         "microsoft.extensions.dependencyinjection.abstractions.6.0.0.nupkg.sha512",
         "microsoft.extensions.dependencyinjection.abstractions.nuspec",
         "useSharedDesignerContext.txt"
-      ]
-    },
-    "Microsoft.Extensions.Localization.Abstractions/6.0.8": {
-      "sha512": "Cw2UaDDkpExESiaJlXA1ip9fu91c27eO7mXxnZrMZEbziLbXTlpVBDcRoSPbyAiD8km1Npu/zgQZdScBZo//fg==",
-      "type": "package",
-      "path": "microsoft.extensions.localization.abstractions/6.0.8",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "THIRD-PARTY-NOTICES.TXT",
-        "lib/net461/Microsoft.Extensions.Localization.Abstractions.dll",
-        "lib/net461/Microsoft.Extensions.Localization.Abstractions.xml",
-        "lib/net6.0/Microsoft.Extensions.Localization.Abstractions.dll",
-        "lib/net6.0/Microsoft.Extensions.Localization.Abstractions.xml",
-        "lib/netstandard2.0/Microsoft.Extensions.Localization.Abstractions.dll",
-        "lib/netstandard2.0/Microsoft.Extensions.Localization.Abstractions.xml",
-        "microsoft.extensions.localization.abstractions.6.0.8.nupkg.sha512",
-        "microsoft.extensions.localization.abstractions.nuspec"
       ]
     },
     "Microsoft.Extensions.Logging.Abstractions/6.0.4": {
@@ -823,20 +747,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "MDD4All.AssemblyLoading.Contracts/1.0.0": {
-      "type": "project",
-      "path": "../../../MDD4All.AssemblyLoading.Contracts/src/MDD4All.AssemblyLoading.Contracts/MDD4All.AssemblyLoading.Contracts-dev.csproj",
-      "msbuildProject": "../../../MDD4All.AssemblyLoading.Contracts/src/MDD4All.AssemblyLoading.Contracts/MDD4All.AssemblyLoading.Contracts-dev.csproj"
-    },
     "MDD4All.Configuration/1.0.0": {
       "type": "project",
       "path": "../../../MDD4All.Configuration/src/MDD4All.Configuration/MDD4All.Configuration-dev.csproj",
       "msbuildProject": "../../../MDD4All.Configuration/src/MDD4All.Configuration/MDD4All.Configuration-dev.csproj"
-    },
-    "MDD4All.DME.AssemblyTree/1.0.0": {
-      "type": "project",
-      "path": "../../../MDD4All.DME.AssemblyTree/src/MDD4All.DME.AssemblyTree/MDD4All.DME.AssemblyTree-dev.csproj",
-      "msbuildProject": "../../../MDD4All.DME.AssemblyTree/src/MDD4All.DME.AssemblyTree/MDD4All.DME.AssemblyTree-dev.csproj"
     },
     "MDD4All.DME.DataAccess/1.0.0": {
       "type": "project",
@@ -858,11 +772,6 @@
       "path": "../../../MDD4All.Reflection.TypeAnalyzer/src/MDD4All.Reflection.TypeAnalyzer/MDD4All.Reflection.TypeAnalyzer-dev.csproj",
       "msbuildProject": "../../../MDD4All.Reflection.TypeAnalyzer/src/MDD4All.Reflection.TypeAnalyzer/MDD4All.Reflection.TypeAnalyzer-dev.csproj"
     },
-    "MDD4All.UI.BlazorComponents/1.0.0": {
-      "type": "project",
-      "path": "../../../MDD4All.UI.BlazorComponents/src/MDD4All.UI.BlazorComponents/MDD4All.UI.BlazorComponents-dev.csproj",
-      "msbuildProject": "../../../MDD4All.UI.BlazorComponents/src/MDD4All.UI.BlazorComponents/MDD4All.UI.BlazorComponents-dev.csproj"
-    },
     "MDD4All.UI.DataModels/1.0.0": {
       "type": "project",
       "path": "../../../MDD4All.UI.DataModels/src/MDD4All.UI.DataModels/MDD4All.UI.DataModels-dev.csproj",
@@ -872,11 +781,10 @@
   "projectFileDependencyGroups": {
     "net6.0": [
       "CommunityToolkit.Mvvm >= 8.0.0",
-      "MDD4All.AssemblyLoading.Contracts >= 1.0.0",
       "MDD4All.Configuration >= 1.0.0",
-      "MDD4All.DME.AssemblyTree >= 1.0.0",
       "MDD4All.DME.DataAccess >= 1.0.0",
       "MDD4All.FileAccess.Contracts >= 1.0.0",
+      "MDD4All.Localization >= 1.0.0",
       "MDD4All.Reflection.TypeAnalyzer >= 1.0.0",
       "MDD4All.UI.DataModels >= 1.0.0",
       "Microsoft.AspNetCore.Components.Web >= 6.0.25",
@@ -891,11 +799,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
+      "projectUniqueName": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
       "projectName": "MDD4All.DME.ViewModels",
-      "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
+      "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\MDD4All.DME.ViewModels-dev.csproj",
       "packagesPath": "C:\\Users\\schuesslmo\\.nuget\\packages\\",
-      "outputPath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\obj\\",
+      "outputPath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.ViewModels\\src\\MDD4All.DME.ViewModels-dev\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -916,26 +824,23 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "c:\\work\\DME-GitHub\\src\\MDD4All.AssemblyLoading.Contracts\\src\\MDD4All.AssemblyLoading.Contracts\\MDD4All.AssemblyLoading.Contracts-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.AssemblyLoading.Contracts\\src\\MDD4All.AssemblyLoading.Contracts\\MDD4All.AssemblyLoading.Contracts-dev.csproj"
+            "c:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj": {
+              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj"
             },
-            "C:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj": {
-              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.DME.AssemblyTree\\src\\MDD4All.DME.AssemblyTree\\MDD4All.DME.AssemblyTree-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.AssemblyTree\\src\\MDD4All.DME.AssemblyTree\\MDD4All.DME.AssemblyTree-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.Localization\\src\\MDD4All.Localization\\MDD4All.Localization-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.Localization\\src\\MDD4All.Localization\\MDD4All.Localization-dev.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj"
-            },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj"
             }
           }
         }

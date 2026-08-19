@@ -9,23 +9,19 @@
       "MDD4All.DME.ViewModels/1.0.0": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.0.0",
-          "MDD4All.AssemblyLoading.Contracts": "1.0.0",
           "MDD4All.Configuration": "1.0.0",
-          "MDD4All.DME.AssemblyTree": "1.0.0",
           "MDD4All.DME.DataAccess": "1.0.0",
           "MDD4All.FileAccess.Contracts": "1.0.0",
+          "MDD4All.Localization": "1.0.0",
           "MDD4All.Reflection.TypeAnalyzer": "1.0.0",
           "MDD4All.UI.DataModels": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "6.0.25",
           "Microsoft.JSInterop": "6.0.36",
           "Newtonsoft.Json": "13.0.3",
-          "MDD4All.AssemblyLoading.Contracts.Reference": "1.0.0.0",
           "MDD4All.Configuration.Reference": "1.0.0.0",
-          "MDD4All.DME.AssemblyTree.Reference": "1.0.0.0",
           "MDD4All.FileAccess.Contracts.Reference": "1.0.0.0",
           "MDD4All.Localization.Reference": "1.0.0.0",
           "MDD4All.Reflection.TypeAnalyzer.Reference": "1.0.0.0",
-          "MDD4All.UI.BlazorComponents.Reference": "1.0.0.0",
           "MDD4All.UI.DataModels.Reference": "1.0.0.0"
         },
         "runtime": {
@@ -112,12 +108,11 @@
           }
         }
       },
-      "Microsoft.Extensions.DependencyInjection.Abstractions/6.0.0": {},
-      "Microsoft.Extensions.Localization.Abstractions/6.0.8": {
+      "Microsoft.Extensions.DependencyInjection.Abstractions/6.0.0": {
         "runtime": {
-          "lib/net6.0/Microsoft.Extensions.Localization.Abstractions.dll": {
+          "lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
             "assemblyVersion": "6.0.0.0",
-            "fileVersion": "6.0.822.36316"
+            "fileVersion": "6.0.21.52210"
           }
         }
       },
@@ -133,11 +128,23 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0",
           "Microsoft.Extensions.Primitives": "6.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.1/Microsoft.Extensions.Options.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
         }
       },
       "Microsoft.Extensions.Primitives/6.0.0": {
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Microsoft.Extensions.Primitives.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
         }
       },
       "Microsoft.JSInterop/6.0.36": {
@@ -173,13 +180,6 @@
         }
       },
       "System.Runtime.CompilerServices.Unsafe/6.0.0": {},
-      "MDD4All.AssemblyLoading.Contracts/1.0.0": {
-        "runtime": {
-          "MDD4All.AssemblyLoading.Contracts.dll": {
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
       "MDD4All.Configuration/1.0.0": {
         "dependencies": {
           "MvvmLightLibsStd10": "5.4.1.1",
@@ -187,18 +187,6 @@
         },
         "runtime": {
           "MDD4All.Configuration.dll": {
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "MDD4All.DME.AssemblyTree/1.0.0": {
-        "dependencies": {
-          "MDD4All.AssemblyLoading.Contracts": "1.0.0",
-          "MDD4All.UI.BlazorComponents": "1.0.0",
-          "MDD4All.UI.DataModels": "1.0.0"
-        },
-        "runtime": {
-          "MDD4All.DME.AssemblyTree.dll": {
             "fileVersion": "0.0.0.0"
           }
         }
@@ -236,24 +224,6 @@
           }
         }
       },
-      "MDD4All.UI.BlazorComponents/1.0.0": {
-        "dependencies": {
-          "MDD4All.Localization": "1.0.0",
-          "MDD4All.UI.DataModels": "1.0.0",
-          "Microsoft.AspNetCore.Components.Web": "6.0.25",
-          "Microsoft.Extensions.Localization.Abstractions": "6.0.8"
-        },
-        "runtime": {
-          "MDD4All.UI.BlazorComponents.dll": {
-            "fileVersion": "0.0.0.0"
-          }
-        },
-        "resources": {
-          "de/MDD4All.UI.BlazorComponents.resources.dll": {
-            "locale": "de"
-          }
-        }
-      },
       "MDD4All.UI.DataModels/1.0.0": {
         "runtime": {
           "MDD4All.UI.DataModels.dll": {
@@ -261,25 +231,9 @@
           }
         }
       },
-      "MDD4All.AssemblyLoading.Contracts.Reference/1.0.0.0": {
-        "runtime": {
-          "MDD4All.AssemblyLoading.Contracts.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        }
-      },
       "MDD4All.Configuration.Reference/1.0.0.0": {
         "runtime": {
           "MDD4All.Configuration.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        }
-      },
-      "MDD4All.DME.AssemblyTree.Reference/1.0.0.0": {
-        "runtime": {
-          "MDD4All.DME.AssemblyTree.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -306,19 +260,6 @@
           "MDD4All.Reflection.TypeAnalyzer.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
-          }
-        }
-      },
-      "MDD4All.UI.BlazorComponents.Reference/1.0.0.0": {
-        "runtime": {
-          "MDD4All.UI.BlazorComponents.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        },
-        "resources": {
-          "de/MDD4All.UI.BlazorComponents.resources.dll": {
-            "locale": "de"
           }
         }
       },
@@ -401,13 +342,6 @@
       "path": "microsoft.extensions.dependencyinjection.abstractions/6.0.0",
       "hashPath": "microsoft.extensions.dependencyinjection.abstractions.6.0.0.nupkg.sha512"
     },
-    "Microsoft.Extensions.Localization.Abstractions/6.0.8": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Cw2UaDDkpExESiaJlXA1ip9fu91c27eO7mXxnZrMZEbziLbXTlpVBDcRoSPbyAiD8km1Npu/zgQZdScBZo//fg==",
-      "path": "microsoft.extensions.localization.abstractions/6.0.8",
-      "hashPath": "microsoft.extensions.localization.abstractions.6.0.8.nupkg.sha512"
-    },
     "Microsoft.Extensions.Logging.Abstractions/6.0.4": {
       "type": "package",
       "serviceable": true,
@@ -464,17 +398,7 @@
       "path": "system.runtime.compilerservices.unsafe/6.0.0",
       "hashPath": "system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512"
     },
-    "MDD4All.AssemblyLoading.Contracts/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
     "MDD4All.Configuration/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "MDD4All.DME.AssemblyTree/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -499,27 +423,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "MDD4All.UI.BlazorComponents/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
     "MDD4All.UI.DataModels/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "MDD4All.AssemblyLoading.Contracts.Reference/1.0.0.0": {
-      "type": "reference",
-      "serviceable": false,
-      "sha512": ""
-    },
     "MDD4All.Configuration.Reference/1.0.0.0": {
-      "type": "reference",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "MDD4All.DME.AssemblyTree.Reference/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
@@ -535,11 +444,6 @@
       "sha512": ""
     },
     "MDD4All.Reflection.TypeAnalyzer.Reference/1.0.0.0": {
-      "type": "reference",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "MDD4All.UI.BlazorComponents.Reference/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
