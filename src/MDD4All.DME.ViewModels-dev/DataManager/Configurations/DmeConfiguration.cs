@@ -11,5 +11,10 @@ namespace MDD4All.DME.Configurations
         // data model it belongs to instead of relying on whichever one is currently open.
         public bool SaveTypeInformation { get; set; } = false;
 
+        // Off, the data model list only offers types a new object can be built from. On, it
+        // shows every public class in the assembly - useful to see what a model contains, at
+        // the price of entries New cannot do anything with.
+        public bool ShowAllDataModels { get; set; } = false;
+
     }
 }

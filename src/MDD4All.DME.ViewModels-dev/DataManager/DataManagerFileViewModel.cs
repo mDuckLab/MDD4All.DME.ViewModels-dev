@@ -288,6 +288,14 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (dataModelRootType != null)
             {
+                // With the filter switched off the list also holds types that cannot be built.
+                if (!_dataModelCatalog.CanCreateInstance(dataModelRootType))
+                {
+                    this.LoadErrorMessage = "\"" + dataModelRootType.Name + "\" cannot be created - "
+                                            + "it is abstract or has no parameterless constructor.";
+                    return;
+                }
+
                 // A plain Activator.CreateInstance - no serialization involved, which is why this
                 // path needs none of the machinery that opening a file does.
                 object? newInstance = _dataSerializer.CreateInstance(dataModelRootType);

@@ -54,6 +54,20 @@ namespace MDD4All.DME.ViewModels.DataManager
         }
 
 
+        public bool ShowAllDataModels
+        {
+            get
+            {
+                return _configuration.ShowAllDataModels;
+            }
+            set
+            {
+                _configuration.ShowAllDataModels = value;
+                this.Persist();
+                this.OnPropertyChanged(nameof(ShowAllDataModels));
+            }
+        }
+
         public bool SaveTypeInformation
         {
             get
