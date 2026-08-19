@@ -20,13 +20,13 @@ namespace MDD4All.DME.ViewModels.Editor
 
         private void InitializeCommonData()
         {
-            // Holt den Typ der Elemente in der Liste/im Array
+            // The type of the elements in the list or array
             this.UnderlyingTypeAnalyzer = TypeAnalyzer.CreateAnalyst(base.TypeAnalyzer.UnderlyingTypes[0]);
         }
 
         private void InitializeCommands()
         {
-            // Die Commands rufen die abstrakten Methoden auf
+            // The commands call the abstract methods
             this.AddItemCommand = new RelayCommand(ExecuteAddItem);
             this.CreateInstanceCommand = new RelayCommand(ExecuteCreateInstance);
             this.DeleteAtIndexCommand = new RelayCommand<int>(ExecuteDeleteAtIndex);

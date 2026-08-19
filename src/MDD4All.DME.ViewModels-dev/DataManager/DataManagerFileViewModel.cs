@@ -303,8 +303,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 }
                 else
                 {
-                    this.LoadErrorMessage = "Der Typ \"" + descriptor.DataModelDescription.FullTypeName
-                                            + "\" wurde in der Datenmodell-DLL nicht gefunden.";
+                    this.LoadErrorMessage = "The type \"" + descriptor.DataModelDescription.FullTypeName
+                                            + "\" was not found in the data model DLL.";
                 }
             }
         }
@@ -346,7 +346,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                     {
                         // Neither source produced anything - a fresh installation where no data
                         // model was ever picked, opening a file that does not name one either.
-                        this.LoadErrorMessage = "Es ist kein Datenmodell ausgewählt, und die Datei nennt selbst keines.";
+                        this.LoadErrorMessage = "No data model is selected, and the file does not name one either.";
                     }
                     else
                     {
@@ -355,7 +355,7 @@ namespace MDD4All.DME.ViewModels.DataManager
                         if (type == null)
                         {
                             // The DLL is there but no longer holds that type - renamed or replaced.
-                            this.LoadErrorMessage = "Der Typ \"" + descriptor.FullTypeName + "\" wurde in der Datenmodell-DLL nicht gefunden.";
+                            this.LoadErrorMessage = "The type \"" + descriptor.FullTypeName + "\" was not found in the data model DLL.";
                         }
                         else
                         {
@@ -474,8 +474,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 // and must not open its file dialog a second time.
                 _pendingSavePath = filePath;
 
-                this.ComplexKeyWarningMessage = "Diese Einträge werden beim Speichern verworfen, weil komplexe "
-                                                + "Dictionary-Schlüssel abgeschaltet sind: "
+                this.ComplexKeyWarningMessage = "These entries will be dropped when saving, because complex "
+                                                + "dictionary keys are switched off: "
                                                 + string.Join(", ", affected) + ".";
 
                 this.ShowComplexKeyWarning = true;
@@ -486,8 +486,8 @@ namespace MDD4All.DME.ViewModels.DataManager
                 // the wording states what happened instead of what is about to.
                 this.WriteDataFile(filePath);
 
-                this.SaveWarningMessage = "Diese Einträge wurden beim Speichern verworfen, weil komplexe "
-                                          + "Dictionary-Schlüssel abgeschaltet sind: "
+                this.SaveWarningMessage = "These entries were dropped when saving, because complex "
+                                          + "dictionary keys are switched off: "
                                           + string.Join(", ", affected) + ".";
             }
         }
@@ -542,25 +542,25 @@ namespace MDD4All.DME.ViewModels.DataManager
             switch (result)
             {
                 case LoadResult.FileNotReadable:
-                    message = "Die Datei konnte nicht gelesen werden.";
+                    message = "The file could not be read.";
                     break;
 
                 case LoadResult.NotReadableAsJson:
-                    message = "Die Datei ist kein gültiges JSON.";
+                    message = "The file is not valid JSON.";
                     break;
 
                 case LoadResult.DoesNotMatchType:
-                    message = "Die Datei passt nicht zum gewählten Datenmodell \""
+                    message = "The file does not match the selected data model \""
                               + dataModelRootType.Name
-                              + "\". Sie enthält keine Typinformation, daher lässt sich das richtige Modell nicht bestimmen.";
+                              + "\". It carries no type information, so the right model cannot be determined.";
                     break;
 
                 case LoadResult.NoObject:
-                    message = "Die Datei enthält kein verwertbares Objekt.";
+                    message = "The file contains no usable object.";
                     break;
 
                 default:
-                    message = "Die Datei konnte nicht gelesen werden - sie passt vermutlich nicht zum Datenmodell \""
+                    message = "The file could not be read - it probably does not match the data model \""
                               + dataModelRootType.Name + "\".";
                     break;
             }
