@@ -824,20 +824,20 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "c:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.Configuration\\src\\MDD4All.Configuration\\MDD4All.Configuration-dev.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.DME.DataAccess\\MDD4All.DME.DataAccess.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.FileAccess.Contracts\\src\\MDD4All.FileAccess.Contracts\\MDD4All.FileAccess.Contracts-dev.csproj"
             },
             "c:\\work\\DME-GitHub\\src\\MDD4All.Localization\\src\\MDD4All.Localization\\MDD4All.Localization-dev.csproj": {
               "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.Localization\\src\\MDD4All.Localization\\MDD4All.Localization-dev.csproj"
             },
-            "c:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj": {
-              "projectPath": "c:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj"
+            "C:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj": {
+              "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.Reflection.TypeAnalyzer\\src\\MDD4All.Reflection.TypeAnalyzer\\MDD4All.Reflection.TypeAnalyzer-dev.csproj"
             },
             "C:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj": {
               "projectPath": "C:\\work\\DME-GitHub\\src\\MDD4All.UI.DataModels\\src\\MDD4All.UI.DataModels\\MDD4All.UI.DataModels-dev.csproj"

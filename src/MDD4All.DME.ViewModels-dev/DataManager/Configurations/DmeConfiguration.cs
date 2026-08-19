@@ -6,7 +6,6 @@ namespace MDD4All.DME.Configurations
         // are compiled in rather than picked from disk.
         public string LastUsedDataFilePath { get; set; } = string.Empty;
 
-        public string DesiredLanguage {  get; set; } = "en-US";
 
         // Writes the root object's type into the saved file, so opening it later can tell which
         // data model it belongs to instead of relying on whichever one is currently open.

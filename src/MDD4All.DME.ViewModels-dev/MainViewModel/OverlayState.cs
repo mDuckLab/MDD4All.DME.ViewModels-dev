@@ -3,7 +3,6 @@ namespace MDD4All.DME.ViewModels.DataManager
     public enum OverlayState
     {
         None,
-        Settings,
-        CultureChange
+        Settings
     }
 }
