@@ -1,6 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using MDD4All.Localization.Contracts;
-using System;
 using System.ComponentModel;
 
 namespace MDD4All.DME.ViewModels.DataManager
@@ -8,14 +6,10 @@ namespace MDD4All.DME.ViewModels.DataManager
     public class MainViewModel : ObservableObject
     {
         #region constructor
-        public MainViewModel(ILanguageSetter languageSetter,
-                             DataManagerFileViewModel dataFileManager,
+        public MainViewModel(DataManagerFileViewModel dataFileManager,
                              DataManagerModelViewModel dataModelManager,
                              DataManagerObjectViewModel dataManagerObject)
         {
-            _languageSetter = languageSetter;
-            _languageSetter.CultureChanged += OnCultureChanged;
-
             _dataFileManager = dataFileManager;
             _dataFileManager.PropertyChanged += OnDataFileManagerPropertyChanged;
 
@@ -29,8 +23,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Properties
-
-        private ILanguageSetter _languageSetter;
 
         private DataManagerFileViewModel _dataFileManager;
 
@@ -142,11 +134,6 @@ namespace MDD4All.DME.ViewModels.DataManager
         #endregion
 
         #region Event Handlers
-
-        private void OnCultureChanged(object? sender, EventArgs e)
-        {
-            ActiveOverlay = OverlayState.CultureChange;
-        }
 
         // A file was opened or created - that is the moment the editor takes over the screen.
         private void OnDataManagerObjectPropertyChanged(object? sender, PropertyChangedEventArgs e)
