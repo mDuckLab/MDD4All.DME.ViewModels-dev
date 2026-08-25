@@ -66,9 +66,15 @@ namespace MDD4All.DME.ViewModels.Editor
                             result = true;
                         }
                     }
-                    else if (_viewModel.TypeCategory == TypeCategory.IDictionary)
+                    else if (_viewModel is DictionaryEditorViewModel dictionaryEditorViewModel)
                     {
-                        result = true;
+                        // Only the simple table hides its delete buttons behind the mode. As soon
+                        // as key or value is an object, every entry gets a card with its own.
+                        if (dictionaryEditorViewModel.IsKeyTypeSimple
+                            && dictionaryEditorViewModel.IsValueTypeSimple)
+                        {
+                            result = true;
+                        }
                     }
                 }
                 return result;
