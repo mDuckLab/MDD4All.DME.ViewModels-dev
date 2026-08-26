@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MDD4All.Configuration;
 using MDD4All.Configuration.Contracts;
 using MDD4All.DME.Configurations;
@@ -94,6 +94,20 @@ namespace MDD4All.DME.ViewModels.DataManager
                 _configuration.LastUsedDataModelPath = value;
                 this.Persist();
                 this.OnPropertyChanged(nameof(LastUsedDataModelPath));
+            }
+        }
+
+        public string DesiredLanguage
+        {
+            get
+            {
+                return _configuration.DesiredLanguage;
+            }
+            set
+            {
+                _configuration.DesiredLanguage = value;
+                this.Persist();
+                this.OnPropertyChanged(nameof(DesiredLanguage));
             }
         }
 
