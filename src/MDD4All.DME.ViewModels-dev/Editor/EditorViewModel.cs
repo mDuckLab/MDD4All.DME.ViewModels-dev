@@ -1,6 +1,7 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MDD4All.DME.ViewModels.Editor;
 using MDD4All.DME.ViewModels.Editor.Settings;
+using MDD4All.Localization.Contracts;
 using MDD4All.UI.DataModels.Tree;
 using System;
 using System.ComponentModel;
@@ -11,12 +12,15 @@ namespace MDD4All.DME.ViewModels.DataManager
     {
         #region constructor
         public EditorViewModel(DataManagerObjectViewModel dataManagerObject,
-                               EditorAppearanceSettingsViewModel editorSettings)
+                               EditorAppearanceSettingsViewModel editorSettings,
+                               ILanguageSetter languageSetter)
         {
             _dataManagerObject = dataManagerObject;
             _dataManagerObject.PropertyChanged += OnDataManagerObjectPropertyChanged;
 
             _editorSettings = editorSettings;
+
+            _languageSetter = languageSetter;
 
             // As a lazily-constructed singleton, this can be built after a data file
             // was already loaded (e.g. the switch to the Editor screen itself triggers
@@ -35,6 +39,10 @@ namespace MDD4All.DME.ViewModels.DataManager
         // The visible depth is stored across sessions, so it has to be held against whatever
         // document is open now.
         private readonly EditorAppearanceSettingsViewModel _editorSettings;
+
+        // Handed to every tree that gets built, so the Display annotations can be read in the
+        // language the user picked.
+        private readonly ILanguageSetter _languageSetter;
 
         // The deepest level the stepper offers as a number: one below what the document has.
         //
@@ -148,7 +156,8 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (rootObject != null || rootType != null)
             {
-                ObjectTreeViewModel newTree = new ObjectTreeViewModel(rootObject, rootType);
+                ObjectTreeViewModel newTree = new ObjectTreeViewModel(rootObject, rootType,
+                                                                      _languageSetter);
                 newTree.PropertyChanged += this.OnTreePropertyChanged;
                 TreeViewModel = newTree;
             }

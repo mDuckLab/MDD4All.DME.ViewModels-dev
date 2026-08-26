@@ -408,10 +408,14 @@ namespace MDD4All.DME.ViewModels.Editor
                 {
                     if (attribute is DisplayAttribute displayAttribute)
                     {
-                        // GetName() is the attribute's official API for the Name value -
-                        // a method rather than a property because it can also resolve
-                        // localized names from resource files.
-                        result = displayAttribute.GetName();
+                        result = displayAttribute.Name;
+
+                        // The tree owns the resource lookup - it is the one place that knows
+                        // which language was picked, and every node hangs in it.
+                        if (Tree is ObjectTreeViewModel objectTree)
+                        {
+                            result = objectTree.ResolveDisplayName(displayAttribute);
+                        }
 
                         // The attribute can only appear once, first hit is the only hit.
                         break;
