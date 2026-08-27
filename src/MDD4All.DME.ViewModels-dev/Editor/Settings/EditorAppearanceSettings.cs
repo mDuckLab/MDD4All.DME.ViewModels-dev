@@ -1,4 +1,4 @@
-namespace MDD4All.DME.ViewModels.Editor.Settings
+﻿namespace MDD4All.DME.ViewModels.Editor.Settings
 {
     public class EditorAppearanceSettings
     {
@@ -13,5 +13,9 @@ namespace MDD4All.DME.ViewModels.Editor.Settings
         public bool ShowReadOnlyBadges { get; set; } = true;
 
         public bool ShowTypeBadges { get; set; } = true;
+
+        // Labels from the data model's [Display] annotations, rather than the property
+        // names the code uses. On by default - that is what the annotations are for.
+        public bool ShowAnnotationNames { get; set; } = true;
     }
 }

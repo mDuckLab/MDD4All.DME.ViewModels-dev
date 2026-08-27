@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MDD4All.Configuration;
 using MDD4All.Configuration.Contracts;
 
@@ -86,6 +86,18 @@ namespace MDD4All.DME.ViewModels.Editor.Settings
             set
             {
                 SetAndStore(value, _settings.ShowTypeBadges, v => _settings.ShowTypeBadges = v);
+            }
+        }
+
+        public bool ShowAnnotationNames
+        {
+            get
+            {
+                return _settings.ShowAnnotationNames;
+            }
+            set
+            {
+                SetAndStore(value, _settings.ShowAnnotationNames, v => _settings.ShowAnnotationNames = v);
             }
         }
 

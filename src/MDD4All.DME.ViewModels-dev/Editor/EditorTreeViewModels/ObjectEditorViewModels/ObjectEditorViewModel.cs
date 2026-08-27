@@ -385,6 +385,13 @@ namespace MDD4All.DME.ViewModels.Editor
         {
             string? result = null;
 
+            // Turned off in the settings, so the node shows what the property is called in the
+            // code. Asked before the attributes are read at all - there is nothing to look for.
+            if (Tree is ObjectTreeViewModel settingsSource && !settingsSource.ShowAnnotationNames)
+            {
+                return null;
+            }
+
             try
             {
                 // Where to look: the property this node hangs on, or - for the
@@ -410,11 +417,11 @@ namespace MDD4All.DME.ViewModels.Editor
                     {
                         result = displayAttribute.Name;
 
-                        // The tree owns the resource lookup - it is the one place that knows
-                        // which language was picked, and every node hangs in it.
-                        if (Tree is ObjectTreeViewModel objectTree)
+                        // The tree is how a node reaches the provider that reads the data
+                        // model's own resources.
+                        if (Tree is ObjectTreeViewModel objectTree && objectTree.AnnotationTexts != null)
                         {
-                            result = objectTree.ResolveDisplayName(displayAttribute);
+                            result = objectTree.AnnotationTexts.Resolve(displayAttribute);
                         }
 
                         // The attribute can only appear once, first hit is the only hit.

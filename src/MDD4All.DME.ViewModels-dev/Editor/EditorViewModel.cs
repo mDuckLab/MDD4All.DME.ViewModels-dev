@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MDD4All.DME.ViewModels.Editor;
 using MDD4All.DME.ViewModels.Editor.Settings;
+using MDD4All.DME.ViewModels.Localization;
 using MDD4All.Localization.Contracts;
 using MDD4All.UI.DataModels.Tree;
 using System;
@@ -156,8 +157,12 @@ namespace MDD4All.DME.ViewModels.DataManager
 
             if (rootObject != null || rootType != null)
             {
-                ObjectTreeViewModel newTree = new ObjectTreeViewModel(rootObject, rootType,
-                                                                      _languageSetter);
+                // A provider per tree, so its cached resource managers go away with the
+                // document instead of holding on to assemblies that were dropped long ago.
+                ObjectTreeViewModel newTree = new ObjectTreeViewModel(
+                                                  rootObject, rootType,
+                                                  new AnnotationTextProvider(_languageSetter),
+                                                  _editorSettings);
                 newTree.PropertyChanged += this.OnTreePropertyChanged;
                 TreeViewModel = newTree;
             }
